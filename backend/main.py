@@ -1,17 +1,18 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import List, Optional
-
-import models
-
+import shutil
 import os
 from dotenv import load_dotenv
+
+import models
 
 load_dotenv()
 
@@ -19,12 +20,17 @@ SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-for-dev")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
+
+# Create uploads directory
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,6 +45,9 @@ class TaskBase(BaseModel):
     title: str
     description: str
     status: str
+    priority: str = "medium"
+    tags: str = ""
+    due_date: Optional[datetime] = None
     time_spent: float
     user_id: int
     team_id: Optional[int] = None
@@ -46,9 +55,39 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     pass
 
+class CommentBase(BaseModel):
+    content: str
+    user_id: int
+
+class Comment(CommentBase):
+    id: int
+    task_id: int
+    created_at: datetime
+    class Config:
+        orm_mode = True
+
+class TaskFileResponse(BaseModel):
+    id: int
+    filename: str
+    file_path: str
+    file_type: str
+    created_at: datetime
+    class Config:
+        orm_mode = True
+
+class TaskHistoryResponse(BaseModel):
+    id: int
+    action: str
+    created_at: datetime
+    class Config:
+        orm_mode = True
+
 class Task(TaskBase):
     id: int
     created_at: datetime
+    comments: List[Comment] = []
+    files: List[TaskFileResponse] = []
+    history: List[TaskHistoryResponse] = []
     class Config:
         orm_mode = True
 
@@ -137,7 +176,6 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         db.refresh(db_user)
         return db_user
     except Exception as e:
-        print(f"REGISTER ERROR: {e}")
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -156,25 +194,68 @@ def get_tasks(db: Session = Depends(get_db)):
     return db.query(models.Task).all()
 
 @app.post("/tasks", response_model=Task)
-def create_task(task: TaskCreate, db: Session = Depends(get_db)):
+def create_task(task: TaskCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_task = models.Task(**task.dict())
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
+    
+    # Add initial history
+    history = models.TaskHistory(task_id=db_task.id, user_id=current_user.id, action="Task created")
+    db.add(history)
+    db.commit()
     return db_task
 
 @app.put("/tasks/{task_id}", response_model=Task)
-def update_task(task_id: int, task_update: TaskCreate, db: Session = Depends(get_db)):
+def update_task(task_id: int, task_update: TaskCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Check for changes to log history
+    changes = []
+    if db_task.status != task_update.status:
+        changes.append(f"Status changed to {task_update.status}")
+    if db_task.priority != task_update.priority:
+        changes.append(f"Priority changed to {task_update.priority}")
     
     for key, value in task_update.dict().items():
         setattr(db_task, key, value)
     
     db.commit()
+    
+    for action in changes:
+        history = models.TaskHistory(task_id=task_id, user_id=current_user.id, action=action)
+        db.add(history)
+    db.commit()
+    
     db.refresh(db_task)
     return db_task
+
+@app.post("/tasks/{task_id}/comments", response_model=Comment)
+def add_comment(task_id: int, comment: CommentBase, db: Session = Depends(get_db)):
+    db_comment = models.Comment(task_id=task_id, user_id=comment.user_id, content=comment.content)
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+@app.post("/tasks/{task_id}/files")
+async def upload_file(task_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    file_path = os.path.join(UPLOAD_DIR, f"{task_id}_{file.filename}")
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    db_file = models.TaskFile(
+        task_id=task_id, 
+        filename=file.filename, 
+        file_path=f"/uploads/{task_id}_{file.filename}",
+        file_type=file.content_type
+    )
+    db.add(db_file)
+    db.commit()
+    db.refresh(db_file)
+    return db_file
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db)):
@@ -189,19 +270,16 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
 def get_members(db: Session = Depends(get_db)):
     return db.query(models.User).all()
 
-@app.delete("/members/{member_id}")
+@app.post("/members/{member_id}")
 def delete_member(member_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can delete members")
-    
     db_member = db.query(models.User).filter(models.User.id == member_id).first()
     if not db_member:
         raise HTTPException(status_code=404, detail="Member not found")
-        
     db.delete(db_member)
     db.commit()
-    return {"message": "Member and their tasks deleted"}
-
+    return {"message": "Member deleted"}
 
 @app.get("/teams", response_model=List[Team])
 def get_teams(db: Session = Depends(get_db)):
@@ -211,7 +289,6 @@ def get_teams(db: Session = Depends(get_db)):
 def create_team(team: TeamCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can create teams")
-    
     db_team = models.Team(name=team.name, owner_id=current_user.id)
     db.add(db_team)
     db.commit()

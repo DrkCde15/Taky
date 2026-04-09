@@ -74,9 +74,16 @@ export default function Teams() {
               onMouseLeave={(e) => (e.target.style.color = 'var(--text-secondary)')}
             >Board</button>
             <button 
+              onClick={() => navigate('/calendar')} 
+              style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => (e.target.style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => (e.target.style.color = 'var(--text-secondary)')}
+            >Calendar</button>
+            <button 
               onClick={() => navigate('/teams')} 
               style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-primary)' }}
             >Teams</button>
+
             {user?.role === 'admin' && (
               <button 
                 onClick={() => navigate('/admin')} 

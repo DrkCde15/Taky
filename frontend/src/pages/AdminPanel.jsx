@@ -84,9 +84,11 @@ export default function AdminPanel() {
           </h2>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button onClick={() => navigate('/')} style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}>Board</button>
+            <button onClick={() => navigate('/calendar')} style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}>Calendar</button>
             <button onClick={() => navigate('/teams')} style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}>Teams</button>
             <button key="admin-nav" style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--accent-primary)' }}>Analytics</button>
           </div>
+
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <img src={user?.avatar} alt={user?.name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />

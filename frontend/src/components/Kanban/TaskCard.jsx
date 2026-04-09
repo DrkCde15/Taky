@@ -40,8 +40,37 @@ export default function TaskCard({ task, onClick, member }) {
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent-primary)')}
       onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
     >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <span style={{ 
+          fontSize: '0.6rem', 
+          fontWeight: '800', 
+          padding: '2px 6px', 
+          borderRadius: '3px', 
+          textTransform: 'uppercase',
+          background: task.priority === 'high' ? 'rgba(248, 81, 73, 0.15)' : 
+                      task.priority === 'medium' ? 'rgba(255, 165, 0, 0.15)' : 
+                      'rgba(63, 185, 80, 0.15)',
+          color: task.priority === 'high' ? 'var(--error)' : 
+                 task.priority === 'medium' ? 'orange' : 
+                 'var(--success)'
+        }}>
+          {task.priority || 'medium'}
+        </span>
+        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>#{task.id}</span>
+      </div>
 
-      <h4 style={{ fontSize: '0.95rem', fontWeight: '600' }}>{task.title}</h4>
+      {task.tags && task.tags.length > 0 && (
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+          {task.tags.map(tag => (
+            <span key={tag} style={{ fontSize: '0.6rem', padding: '1px 5px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', color: 'var(--text-secondary)', border: '1px solid var(--border-primary)' }}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <h4 style={{ fontSize: '1rem', fontWeight: '700', lineHeight: '1.3' }}>{task.title}</h4>
+
       <p style={{ 
         fontSize: '0.8rem', 
         color: 'var(--text-secondary)',

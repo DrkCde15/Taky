@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
 import AdminPanel from './pages/AdminPanel';
 import Invite from './pages/Invite';
+import CalendarView from './pages/CalendarView';
 
 
 
@@ -40,6 +41,14 @@ function App() {
           element={
             <PrivateRoute>
               <Teams />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/calendar" 
+          element={
+            <PrivateRoute>
+              <CalendarView />
             </PrivateRoute>
           } 
         />

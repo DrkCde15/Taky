@@ -12,7 +12,6 @@ export const useTaskStore = create()((set, get) => ({
   fetchTasks: async () => {
     try {
       const resp = await api.get('/tasks');
-      // Map Snake Case to UI Camel Case
       const mappedTasks = resp.data.map(t => ({
         id: t.id.toString(),
         title: t.title,
@@ -20,7 +19,13 @@ export const useTaskStore = create()((set, get) => ({
         status: t.status,
         memberId: t.user_id.toString(),
         timeSpent: t.time_spent,
-        createdAt: t.created_at
+        priority: t.priority || 'medium',
+        tags: t.tags ? t.tags.split(',').filter(x => x) : [],
+        dueDate: t.due_date,
+        createdAt: t.created_at,
+        comments: t.comments || [],
+        history: t.history || [],
+        files: t.files || []
       }));
       set({ tasks: mappedTasks });
     } catch (e) {
@@ -41,12 +46,34 @@ export const useTaskStore = create()((set, get) => ({
     try {
       await api.delete(`/members/${id}`);
       get().fetchMembers();
-      get().fetchTasks(); // Tasks also change because of cascade
+      get().fetchTasks();
     } catch (e) {
       console.error("Delete member failed", e);
     }
   },
 
+  addComment: async (taskId, content) => {
+    try {
+      const userId = JSON.parse(localStorage.getItem('auth-storage'))?.state?.user?.id;
+      await api.post(`/tasks/${taskId}/comments`, { content, user_id: userId });
+      get().fetchTasks();
+    } catch (e) {
+      console.error("Add comment failed", e);
+    }
+  },
+
+  uploadFile: async (taskId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      await api.post(`/tasks/${taskId}/files`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      get().fetchTasks();
+    } catch (e) {
+      console.error("Upload file failed", e);
+    }
+  },
 
   addTask: async (taskData) => {
     try {
@@ -54,10 +81,12 @@ export const useTaskStore = create()((set, get) => ({
         title: taskData.title,
         description: taskData.description,
         status: taskData.status,
+        priority: taskData.priority || 'medium',
+        tags: taskData.tags ? taskData.tags.join(',') : '',
+        due_date: taskData.dueDate,
         time_spent: taskData.timeSpent || 0,
         user_id: parseInt(taskData.memberId),
       });
-      // Refresh tasks
       get().fetchTasks();
       return resp.data;
     } catch (e) {
@@ -74,16 +103,20 @@ export const useTaskStore = create()((set, get) => ({
         title: updates.title || task.title,
         description: updates.description || task.description,
         status: updates.status || task.status,
+        priority: updates.priority || task.priority,
+        tags: updates.tags ? updates.tags.join(',') : (task.tags ? task.tags.join(',') : ''),
+        due_date: updates.dueDate || task.dueDate,
         time_spent: parseFloat(updates.timeSpent !== undefined ? updates.timeSpent : task.timeSpent),
         user_id: parseInt(updates.memberId || task.memberId),
       };
 
       await api.put(`/tasks/${id}`, payload);
-      get().fetchTasks(); // Reload to maintain consistency
+      get().fetchTasks();
     } catch (e) {
       console.error("Update task failed", e);
     }
   },
+
 
   moveTask: async (activeId, overId) => {
     const { tasks } = get();
