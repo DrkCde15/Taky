@@ -15,7 +15,16 @@ def register_user(db: Session, user_data: UserCreate) -> User:
 
     hashed_password = hash_password(user_data.password)
     user_count = db.query(User).count()
-    role = "admin" if user_count == 0 else "member"
+
+    if user_count == 0:
+        role = "admin"
+    elif user_data.role == "admin":
+        existing_admin = db.query(User).filter(User.role == "admin").first()
+        if existing_admin:
+            raise HTTPException(status_code=400, detail="Já existe um administrador no sistema")
+        role = "admin"
+    else:
+        role = "member"
 
     avatar = user_data.avatar or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_data.name}"
     db_user = User(

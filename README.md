@@ -1,74 +1,88 @@
-# 🚀 Tasky - Full-Stack Task Management System
+# Tasky - Sistema de Gerenciamento de Tarefas
 
-Tasky is a powerful, production-ready task management application built with a modern Full-Stack architecture. It features a stunning premium glassmorphism design and advanced tools for team collaboration and project analytics.
+Tasky é um aplicativo de gerenciamento de tarefas construído com FastAPI + React (TanStack Start). Possui quadro Kanban com drag-and-drop, visão em calendário, gerenciamento de equipes e analytics para administradores.
 
-## ✨ Features
+## Funcionalidades
 
-### 📋 Advanced Kanban Board
-- **Dynamic Drag & Drop**: Smooth task organization using `@dnd-kit`.
-- **Priority & Tags**: Categorize tasks with High/Medium/Low priority and custom labels.
-- **Detailed Modals**: Tabbed interface for editing details, comments, history, and files.
+### Quadro Kanban
+- Arraste tarefas entre colunas (A Fazer, Em Andamento, Bloqueado, Concluído) usando @dnd-kit
+- Níveis de prioridade (Baixa/Média/Alta) e tags personalizadas
+- Modal de tarefa com abas: detalhes, comentários, histórico e anexos
 
-### 📅 Calendar & Planning
-- **Visual Schedule**: Track deadlines and task distribution in a dedicated calendar view.
-- **Smart Markers**: Highlights days with high-priority tasks.
+### Calendário
+- Visualização de prazos no calendário
+- Destaca dias com tarefas de alta prioridade
 
-### 📊 Admin & Analytics
-- **Manager Dashboard**: Real-time KPI cards (Total tasks, hours spent, blocked issues).
-- **Interactive Charts**: Performance visualization using `Recharts` (Pie & Bar charts).
-- **Member Management**: Role-based access control (RBAC) to manage team members.
+### Analytics (Admin)
+- Dashboard com KPIs (total de tarefas, horas gastas, bloqueadas)
+- Gráficos de pizza e barras via Recharts
+- Gerenciamento de membros com controle de acesso por função
 
-### 🤝 Team Collaboration
-- **Team Perspectives**: Choose between Admin or Member view upon login.
-- **Invitation System**: Generate secure invite links for new members.
-- **Communication**: Integrated comment system within each task.
-- **Activity Log**: Complete history of status and priority changes.
+### Gerenciamento de Equipes
+- Seleção de perfil no cadastro — usuário escolhe Admin ou Membro (com ícones)
+- Primeiro usuário sempre é admin; cadastro de admin posterior é bloqueado se já existir um
+- No primeiro login, membros escolhem uma equipe para integrar; admins criam sua primeira equipe
+- Cada usuário pertence a uma equipe via `team_id` no model User
+- Sistema de comentários e histórico de atividades em cada tarefa
 
-### 📎 File Management
-- **Attachments**: Support for uploading and downloading `.pdf`, `.csv`, `.xlsx`, `.docx`, `.json`, etc.
-- **Safe Storage**: Managed backend file system for project documentation.
+### Anexos
+- Upload/download de arquivos (.pdf, .csv, .xlsx, .docx, .json, imagens, .txt, .zip)
+- Armazenamento no servidor com validação de tamanho e extensão
 
-## 🛠️ Technology Stack
+## Tecnologias
 
-- **Frontend**: React 19, Vite, Zustand, TailwindCSS (Vanilla CSS logic), Recharts, Lucide Icons.
-- **Backend**: FastAPI (Python), SQLAlchemy, MySQL, JWT Authentication, python-jose.
-- **Design**: Premium Glassmorphism UI with custom CSS variables.
+- **Frontend**: React 19, TanStack Router, Vite, Zustand, TailwindCSS, Recharts, Lucide Icons, @dnd-kit, Sonner
+- **Backend**: FastAPI (Python), SQLAlchemy, MySQL (PyMySQL), JWT (python-jose), passlib
+- **Design**: Interface glassmorphism com variáveis CSS personalizadas
 
-## 🚀 Getting Started
+## Como Começar
 
-### 1. Backend Setup
+### 1. Backend
 ```bash
 cd backend
-# Create and activate virtual environment
 python -m venv venv
 .\venv\Scripts\activate
 
-# Install dependencies
 pip install fastapi uvicorn sqlalchemy pymysql python-multipart python-jose passlib cryptography python-dotenv
 
-# Set up .env file
+# Configurar .env:
 # MYSQL_USER=root
-# MYSQL_PASSWORD=your_password
+# MYSQL_PASSWORD=sua_senha
 # MYSQL_DATABASE=tasky_db
-# SECRET_KEY=your_secret
+# SECRET_KEY=sua_chave_secreta
 
-# Run server
 uvicorn main:app --reload --port 8000
 ```
 
-### 2. Frontend Setup
+### 2. Frontend
 ```bash
 cd frontend
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
 ```
 
-## 🔐 Permissions
-- **Admin**: Can create teams, manage members, view analytics, and delete tasks.
-- **Member**: Can track their own tasks, add comments, upload files, and view the board.
+O frontend roda em `http://localhost:5173` e faz requisições para o backend na porta 8000.
 
-## 📄 License
-This project is for educational and professional demonstration purposes.
+## Permissões
+
+- **Admin**: Criar equipes, gerenciar membros, ver analytics, excluir tarefas
+- **Membro**: Visualizar e gerenciar tarefas atribuídas, adicionar comentários, enviar arquivos
+
+## Visão Geral da API
+
+| Endpoint | Método | Autenticação | Descrição |
+|---|---|---|---|
+| `/auth/register` | POST | — | Cadastrar usuário (admin/member) |
+| `/auth/token` | POST | — | Login, retorna JWT + refresh token |
+| `/auth/refresh` | POST | — | Renovar access token |
+| `/auth/me` | GET | Usuário | Perfil do usuário logado |
+| `/teams` | GET | — | Listar equipes |
+| `/teams` | POST | Admin | Criar equipe |
+| `/teams/{id}/join` | POST | Usuário | Entrar em uma equipe |
+| `/members` | GET | — | Listar membros |
+| `/members/{id}` | DELETE | Admin | Remover membro (limpa registros vinculados) |
+| `/tasks` | GET/POST | Usuário* | Listar / criar tarefas |
+| `/tasks/{id}` | PUT/DELETE | Usuário/Admin | Atualizar / excluir tarefa |
+| `/tasks/{id}/comments` | POST | Usuário | Adicionar comentário |
+
+\* `GET /tasks` não requer autenticação; `POST`/`PUT` exigem login.

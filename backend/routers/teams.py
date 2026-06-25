@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
 from core.security import get_current_user
-from schemas.schemas import TeamCreate, Team
+from schemas.schemas import TeamCreate, Team, User as UserSchema
 from services import team_service
 from models.models import User
 
@@ -22,3 +22,12 @@ def create_team(
     current_user: User = Depends(get_current_user),
 ):
     return team_service.create_team(db, team, current_user)
+
+
+@router.post("/{team_id}/join", response_model=UserSchema)
+def join_team(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return team_service.join_team(db, team_id, current_user)

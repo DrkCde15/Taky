@@ -5,7 +5,7 @@ from typing import List
 import os
 from core.database import get_db
 from core.security import get_current_user, get_current_admin
-from schemas.schemas import TaskCreate, Task, Comment
+from schemas.schemas import TaskCreate, Task, Comment, CommentBase
 from services import task_service
 from models.models import User, TaskFile
 
@@ -39,7 +39,7 @@ def update_task(
 @router.post("/{task_id}/comments", response_model=Comment)
 def add_comment(
     task_id: int,
-    comment: Comment,
+    comment: CommentBase,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

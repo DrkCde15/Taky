@@ -12,7 +12,7 @@ class TaskBase(BaseModel):
     tags: str = ""
     due_date: Optional[datetime] = None
     time_spent: float
-    user_id: int
+    user_id: Optional[int] = None
     team_id: Optional[int] = None
 
     @field_validator("priority")
@@ -115,6 +115,7 @@ class User(BaseModel):
     email: str
     role: str
     avatar: str
+    team_id: Optional[int] = None
 
     class Config:
         from_attributes = True

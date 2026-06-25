@@ -16,3 +16,13 @@ def create_team(db: Session, team_data: TeamCreate, current_user: User) -> Team:
     db.commit()
     db.refresh(db_team)
     return db_team
+
+
+def join_team(db: Session, team_id: int, current_user: User) -> User:
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Equipe não encontrada")
+    current_user.team_id = team_id
+    db.commit()
+    db.refresh(current_user)
+    return current_user

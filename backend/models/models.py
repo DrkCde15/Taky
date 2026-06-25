@@ -12,7 +12,9 @@ class User(Base):
     password = Column(String(255))
     role = Column(String(20), default="member")
     avatar = Column(String(255))
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     tasks = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
+    team = relationship("Team", foreign_keys=[team_id])
 
 
 class Team(Base):
