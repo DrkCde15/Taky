@@ -1,0 +1,29 @@
+.dashboard-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 1.5rem;
+  height: 100%;
+  min-width: fit-content;
+}
+
+@media (max-width: 1200px) {
+  .kanban-board {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 1rem;
+  }
+
+  .kanban-board {
+    gap: 0.75rem;
+  }
+}

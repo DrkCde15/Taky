@@ -1,25 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, create_engine, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Text
+from sqlalchemy.orm import relationship
 import datetime
-import os
-from dotenv import load_dotenv
+from core.database import Base
 
-load_dotenv()
-
-# MySQL configuration from .env
-DB_USER = os.getenv("MYSQL_USER", "root")
-DB_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-DB_HOST = os.getenv("MYSQL_HOST", "localhost")
-DB_PORT = os.getenv("MYSQL_PORT", "3306")
-DB_NAME = os.getenv("MYSQL_DATABASE", "tasky_db")
-
-SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
@@ -39,25 +22,27 @@ class Team(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     tasks = relationship("Task", back_populates="team")
 
+
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200))
     description = Column(Text)
     status = Column(String(50), default="in_progress")
-    priority = Column(String(20), default="medium") # low, medium, high
-    tags = Column(String(255), default="") # comma separated tags
+    priority = Column(String(20), default="medium")
+    tags = Column(String(255), default="")
     due_date = Column(DateTime, nullable=True)
     time_spent = Column(Float, default=0.0)
     user_id = Column(Integer, ForeignKey("users.id"))
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    
+
     owner = relationship("User", back_populates="tasks")
     team = relationship("Team", back_populates="tasks")
     comments = relationship("Comment", back_populates="task", cascade="all, delete-orphan")
     history = relationship("TaskHistory", back_populates="task", cascade="all, delete-orphan")
     files = relationship("TaskFile", back_populates="task", cascade="all, delete-orphan")
+
 
 class Comment(Base):
     __tablename__ = "comments"
@@ -66,20 +51,22 @@ class Comment(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     content = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    
+
     task = relationship("Task", back_populates="comments")
     user = relationship("User")
+
 
 class TaskHistory(Base):
     __tablename__ = "task_history"
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
-    action = Column(String(255)) # e.g. "Status changed from X to Y"
+    action = Column(String(255))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    
+
     task = relationship("Task", back_populates="history")
     user = relationship("User")
+
 
 class TaskFile(Base):
     __tablename__ = "task_files"
@@ -89,8 +76,31 @@ class TaskFile(Base):
     file_path = Column(String(255))
     file_type = Column(String(100))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    
+
     task = relationship("Task", back_populates="files")
 
 
-Base.metadata.create_all(bind=engine)
+class InviteToken(Base):
+    __tablename__ = "invite_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(255), unique=True, index=True)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    expires_at = Column(DateTime)
+    used = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    type = Column(String(50))
+    message = Column(String(500))
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    read = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+    actor = relationship("User", foreign_keys=[actor_id])
+    task = relationship("Task")

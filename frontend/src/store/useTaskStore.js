@@ -6,13 +6,21 @@ export const useTaskStore = create()((set, get) => ({
   members: [],
   teams: [],
   filterMemberId: 'all',
+  loading: false,
+  error: null,
 
   setFilterMember: (memberId) => set({ filterMemberId: memberId }),
 
-  fetchTasks: async () => {
+  setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
+
+  clearError: () => set({ error: null }),
+
+  fetchTasks: async (signal) => {
+    set({ loading: true, error: null });
     try {
-      const resp = await api.get('/tasks');
-      const mappedTasks = resp.data.map(t => ({
+      const resp = await api.get('/tasks', { signal });
+      const mappedTasks = resp.data.map((t) => ({
         id: t.id.toString(),
         title: t.title,
         description: t.description,
@@ -20,25 +28,27 @@ export const useTaskStore = create()((set, get) => ({
         memberId: t.user_id.toString(),
         timeSpent: t.time_spent,
         priority: t.priority || 'medium',
-        tags: t.tags ? t.tags.split(',').filter(x => x) : [],
+        tags: t.tags ? t.tags.split(',').filter((x) => x) : [],
         dueDate: t.due_date,
         createdAt: t.created_at,
         comments: t.comments || [],
         history: t.history || [],
-        files: t.files || []
+        files: t.files || [],
       }));
-      set({ tasks: mappedTasks });
+      set({ tasks: mappedTasks, loading: false });
     } catch (e) {
-      console.error("Fetch tasks failed", e);
+      if (e.name === 'CanceledError' || e.code === 'ERR_CANCELED') return;
+      set({ error: 'Failed to fetch tasks', loading: false });
     }
   },
 
-  fetchMembers: async () => {
+  fetchMembers: async (signal) => {
     try {
-      const resp = await api.get('/members');
+      const resp = await api.get('/members', { signal });
       set({ members: resp.data });
     } catch (e) {
-      console.error("Fetch members failed", e);
+      if (e.name === 'CanceledError' || e.code === 'ERR_CANCELED') return;
+      set({ error: 'Failed to fetch members' });
     }
   },
 
@@ -48,17 +58,19 @@ export const useTaskStore = create()((set, get) => ({
       get().fetchMembers();
       get().fetchTasks();
     } catch (e) {
-      console.error("Delete member failed", e);
+      set({ error: e.response?.data?.detail || 'Failed to delete member' });
     }
   },
 
   addComment: async (taskId, content) => {
     try {
-      const userId = JSON.parse(localStorage.getItem('auth-storage'))?.state?.user?.id;
+      const auth = JSON.parse(localStorage.getItem('auth-storage'));
+      const userId = auth?.state?.user?.id;
+      if (!userId) throw new Error('User not found');
       await api.post(`/tasks/${taskId}/comments`, { content, user_id: userId });
       get().fetchTasks();
     } catch (e) {
-      console.error("Add comment failed", e);
+      set({ error: e.response?.data?.detail || 'Failed to add comment' });
     }
   },
 
@@ -67,11 +79,11 @@ export const useTaskStore = create()((set, get) => ({
     formData.append('file', file);
     try {
       await api.post(`/tasks/${taskId}/files`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       get().fetchTasks();
     } catch (e) {
-      console.error("Upload file failed", e);
+      set({ error: e.response?.data?.detail || 'Failed to upload file' });
     }
   },
 
@@ -87,18 +99,19 @@ export const useTaskStore = create()((set, get) => ({
         time_spent: taskData.timeSpent || 0,
         user_id: parseInt(taskData.memberId),
       });
-      get().fetchTasks();
+      await get().fetchTasks();
       return resp.data;
     } catch (e) {
-      console.error("Add task failed", e);
+      set({ error: e.response?.data?.detail || 'Failed to create task' });
+      throw e;
     }
   },
 
   updateTask: async (id, updates) => {
     try {
-      const task = get().tasks.find(t => t.id === id);
+      const task = get().tasks.find((t) => t.id === id);
       if (!task) return;
-      
+
       const payload = {
         title: updates.title || task.title,
         description: updates.description || task.description,
@@ -113,19 +126,16 @@ export const useTaskStore = create()((set, get) => ({
       await api.put(`/tasks/${id}`, payload);
       get().fetchTasks();
     } catch (e) {
-      console.error("Update task failed", e);
+      set({ error: e.response?.data?.detail || 'Failed to update task' });
     }
   },
-
 
   moveTask: async (activeId, overId) => {
     const { tasks } = get();
     const activeTask = tasks.find((t) => t.id === activeId);
-    
     if (!activeTask) return;
 
-    // Colunas: 'done', 'in_progress', 'blocked', 'ready_for_review'
-    if (['done', 'in_progress', 'blocked', 'ready_for_review'].includes(overId)) {
+    if (['todo', 'in_progress', 'blocked', 'done'].includes(overId)) {
       await get().updateTask(activeId, { status: overId });
       return;
     }
@@ -141,16 +151,17 @@ export const useTaskStore = create()((set, get) => ({
       await api.delete(`/tasks/${id}`);
       set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
     } catch (e) {
-      console.error("Delete task failed", e);
+      set({ error: e.response?.data?.detail || 'Failed to delete task' });
     }
   },
-  
-  fetchTeams: async () => {
+
+  fetchTeams: async (signal) => {
     try {
-      const resp = await api.get('/teams');
+      const resp = await api.get('/teams', { signal });
       set({ teams: resp.data });
     } catch (e) {
-      console.error("Fetch teams failed", e);
+      if (e.name === 'CanceledError' || e.code === 'ERR_CANCELED') return;
+      set({ error: 'Failed to fetch teams' });
     }
   },
 
@@ -160,15 +171,8 @@ export const useTaskStore = create()((set, get) => ({
       get().fetchTeams();
       return resp.data;
     } catch (e) {
-      console.error("Add team failed", e);
-      throw e.response?.data?.detail || "Failed to create team";
+      const message = e.response?.data?.detail || 'Failed to create team';
+      throw new Error(message);
     }
-  },
-
-  addMember: async (member) => {
-
-    // Member addition is now registration. 
-    // In a real system you'd have a Create User endpoint.
-    // For now we'll just mock registration in the UI.
   },
 }));

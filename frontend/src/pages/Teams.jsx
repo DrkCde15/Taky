@@ -1,23 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, LogOut, Users, Plus, Shield, UserPlus, Trash2 } from 'lucide-react';
+import { Users, Plus, Shield, UserPlus, Trash2 } from 'lucide-react';
 import { useTaskStore } from '../store/useTaskStore';
+import AppLayout from '../components/layout/AppLayout';
+import Navbar from '../components/layout/Navbar';
+import Toast from '../components/ui/Toast';
+import ConfirmModal from '../components/ui/ConfirmModal';
+import './Teams.css';
 
 export default function Teams() {
-  const { members, teams, addMember, fetchMembers, fetchTasks, fetchTeams, addTeam, deleteMember } = useTaskStore();
+  const {
+    members,
+    teams,
+    fetchMembers,
+    fetchTasks,
+    fetchTeams,
+    addTeam,
+    deleteMember,
+    error,
+    clearError,
+  } = useTaskStore();
 
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [newMemberName, setNewMemberName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    fetchMembers();
-    fetchTasks(); 
-    fetchTeams();
-  }, []);
+    const abort = new AbortController();
+    fetchMembers(abort.signal);
+    fetchTasks(abort.signal);
+    fetchTeams(abort.signal);
+    return () => abort.abort();
+  }, [fetchMembers, fetchTasks, fetchTeams]);
+
+  useEffect(() => {
+    if (error) {
+      setToast({ message: error, type: 'error' }); // eslint-disable-line react-hooks/set-state-in-effect
+      clearError();
+    }
+  }, [error, clearError]);
 
   const handleCreateTeam = async (e) => {
     e.preventDefault();
@@ -26,241 +50,198 @@ export default function Teams() {
       await addTeam(newTeamName);
       setNewTeamName('');
       setShowCreateModal(false);
+      setToast({ message: 'Equipe criada com sucesso', type: 'success' });
     } catch (err) {
-      alert(err);
+      setToast({ message: err.message, type: 'error' });
     }
-  };
-
-
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
   };
 
   const handleAddMember = (e) => {
     e.preventDefault();
     if (!newMemberName.trim()) return;
-    addMember({
-      id: Math.random().toString(36).substr(2, 9),
-      name: newMemberName,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newMemberName}`
+    setToast({
+      message: 'Use o Link de Convite para adicionar novos membros à sua equipe.',
+      type: 'info',
     });
-    setNewMemberName('');
+  };
+
+  const handleCopyInvite = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/invite`);
+    setToast({ message: 'Link de convite copiado para a área de transferência!', type: 'success' });
+  };
+
+  const handleDeleteMember = async (memberId, memberName) => {
+    if (memberId === user.id) {
+      setToast({ message: 'Você não pode se excluir!', type: 'error' });
+      return;
+    }
+    try {
+      await deleteMember(memberId);
+      setToast({ message: `${memberName} removido com sucesso`, type: 'success' });
+    } catch {
+      setToast({ message: 'Falha ao remover membro', type: 'error' });
+    }
+    setConfirmDelete(null);
   };
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      {/* Top Navigation */}
-      <nav className="glass" style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        padding: '1rem 2rem', 
-        borderBottom: '1px solid var(--border-primary)',
-        width: '100%',
-        zIndex: 50
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <LayoutGrid size={24} /> Tasky
-          </h2>
-          
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              onClick={() => navigate('/')} 
-              style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}
-              onMouseEnter={(e) => (e.target.style.color = 'var(--text-primary)')}
-              onMouseLeave={(e) => (e.target.style.color = 'var(--text-secondary)')}
-            >Board</button>
-            <button 
-              onClick={() => navigate('/calendar')} 
-              style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}
-              onMouseEnter={(e) => (e.target.style.color = 'var(--text-primary)')}
-              onMouseLeave={(e) => (e.target.style.color = 'var(--text-secondary)')}
-            >Calendar</button>
-            <button 
-              onClick={() => navigate('/teams')} 
-              style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-primary)' }}
-            >Teams</button>
-
-            {user?.role === 'admin' && (
-              <button 
-                onClick={() => navigate('/admin')} 
-                style={{ background: 'transparent', border: 'none', fontWeight: '600', color: 'var(--text-secondary)' }}
-                onMouseEnter={(e) => (e.target.style.color = 'var(--text-primary)')}
-                onMouseLeave={(e) => (e.target.style.color = 'var(--text-secondary)')}
-              >Admin</button>
-            )}
-
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <img src={user?.avatar} alt={user?.name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-            <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', padding: '0.25rem' }}>
-              <LogOut size={20} color="var(--text-secondary)" />
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main style={{ flex: 1, padding: '3rem', overflowY: 'auto', background: 'var(--bg-primary)' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-          
-          {/* Teams Section */}
-          <section>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Your Teams</h2>
+    <AppLayout
+      navbar={<Navbar />}
+    >
+      <div className="teams-content">
+        <div className="teams-container">
+          <section className="teams-section">
+            <div className="section-header">
+              <h2>Suas Equipes</h2>
               {user?.role === 'admin' && (
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/invite`);
-                      alert('Invitation link copied to clipboard!');
-                    }}
-                    style={{ background: 'transparent', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)' }}
+                <div className="section-actions">
+                  <button
+                    onClick={handleCopyInvite}
+                    className="btn-outline"
                   >
-                    <UserPlus size={18} /> Invite Link
+                    <UserPlus size={18} /> Link de Convite
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowCreateModal(true)}
-                    style={{ backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', fontWeight: '700' }}
+                    className="btn-primary"
                   >
-                    <Plus size={18} /> Create Team
+                    <Plus size={18} /> Criar Equipe
                   </button>
                 </div>
               )}
-
             </div>
 
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            <div className="teams-grid">
               {teams.length === 0 ? (
-                <div style={{ color: 'var(--text-secondary)', padding: '2rem' }}>No teams created yet.</div>
-              ) : teams.map(team => (
-                <div key={team.id} className="glass" style={{ padding: '2rem', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Shield size={24} color="var(--accent-primary)" />
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{team.name}</h3>
-                  </div>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Owner ID: {team.owner_id}</p>
-                  <button style={{ marginTop: '1rem', width: '100%', padding: '0.5rem', background: 'transparent', border: '1px solid var(--border-primary)' }}>Manage Team</button>
+                <div className="empty-state">
+                  <Shield size={48} />
+                  <h3>Nenhuma equipe ainda</h3>
+                  <p>Crie sua primeira equipe para começar.</p>
                 </div>
-              ))}
+              ) : (
+                teams.map((team) => (
+                  <div key={team.id} className="team-card glass">
+                    <div className="team-card-header">
+                      <Shield size={24} color="var(--accent-primary)" />
+                      <h3>{team.name}</h3>
+                    </div>
+                    <p className="team-owner">
+                      Proprietário ID: {team.owner_id}
+                    </p>
+                    <button className="btn-secondary">
+                      Gerenciar Equipe
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
-          {/* Members Section */}
-          <section>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Team Members</h2>
+          <section className="members-section">
+            <div className="section-header">
+              <h2>Membros da Equipe</h2>
               {user?.role === 'admin' && (
-                <form onSubmit={handleAddMember} style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input 
-                    value={newMemberName} 
-                    onChange={(e) => setNewMemberName(e.target.value)} 
-                    placeholder="New member name..." 
-                    style={{ minWidth: '250px' }}
+                <form onSubmit={handleAddMember} className="add-member-form">
+                  <input
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    placeholder="Nome do novo membro..."
                   />
-                  <button type="submit" style={{ backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', fontWeight: '700' }}>
-                    <UserPlus size={18} /> Add Member
+                  <button type="submit" className="btn-primary">
+                    <UserPlus size={18} /> Adicionar Membro
                   </button>
                 </form>
               )}
             </div>
 
-
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-              {members.map((m, i) => (
-                <div key={m.id} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  padding: '1rem 1.5rem', 
-                  borderBottom: i === members.length - 1 ? 'none' : '1px solid var(--border-primary)',
-                  transition: 'background 0.2s',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src={m.avatar} alt={m.name} style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
-                    <div>
-                      <h4 style={{ fontWeight: '600' }}>{m.name}</h4>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Full access • {i === 0 ? 'Admin' : 'Member'}</p>
-                    </div>
-                  </div>
-                  {user?.role === 'admin' && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (m.id === user.id) return alert("You can't delete yourself!");
-                        if (window.confirm(`Delete ${m.name}? All tasks will be removed.`)) {
-                          deleteMember(m.id);
-                        }
-                      }}
-                      style={{ background: 'transparent', color: 'var(--error)', border: 'none', padding: '0.5rem' }}
-                    >
-                      <Trash2 size={18} opacity={0.5} />
-                    </button>
-                  )}
-
+            <div className="members-list">
+              {members.length === 0 ? (
+                <div className="empty-state">
+                  <Users size={48} />
+                  <h3>Nenhum membro ainda</h3>
+                  <p>Convide membros para colaborar.</p>
                 </div>
-
-              ))}
+              ) : (
+                members.map((m, i) => (
+                  <div key={m.id} className="member-row">
+                    <div className="member-info">
+                      <img
+                        src={m.avatar}
+                        alt={m.name}
+                        className="member-avatar"
+                      />
+                      <div>
+                        <h4>{m.name}</h4>
+                        <p className="member-role">
+                          Acesso total &bull; {i === 0 ? 'Admin' : 'Membro'}
+                        </p>
+                      </div>
+                    </div>
+                    {user?.role === 'admin' && (
+                      <button
+                        onClick={() => setConfirmDelete(m)}
+                        className="btn-delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </section>
-
         </div>
-      </main>
+      </div>
 
-      {/* Modal Criar Equipe */}
       {showCreateModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(5px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div className="glass" style={{
-            padding: '2.5rem',
-            borderRadius: 'var(--radius-lg)',
-            width: '100%',
-            maxWidth: '400px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem'
-          }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '800' }}>Create New Team</h2>
-            <form onSubmit={handleCreateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div>
-                <label>Team Name</label>
-                <input 
-                  value={newTeamName} 
-                  onChange={(e) => setNewTeamName(e.target.value)} 
-                  placeholder="Engineering, Design, etc..."
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <h2>Criar Nova Equipe</h2>
+            <form onSubmit={handleCreateTeam}>
+              <div className="form-group">
+                <label>Nome da Equipe</label>
+                <input
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  placeholder="Engenharia, Design, etc..."
                   autoFocus
-                  style={{ width: '100%' }}
                 />
               </div>
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" onClick={() => setShowCreateModal(false)} style={{ flex: 1, background: 'transparent' }}>Cancel</button>
-                <button type="submit" style={{ flex: 1, backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', fontWeight: '700' }}>
-                  Create
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="btn-secondary"
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary">
+                  Criar
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+
+      {confirmDelete && (
+        <ConfirmModal
+          title="Remover Membro"
+          message={`Excluir ${confirmDelete.name}? Todas as tarefas associadas serão removidas.`}
+          onConfirm={() =>
+            handleDeleteMember(confirmDelete.id, confirmDelete.name)
+          }
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </AppLayout>
   );
 }
-
