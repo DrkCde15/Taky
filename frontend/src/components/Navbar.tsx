@@ -42,9 +42,7 @@ export default function Navbar({
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--glow-primary)]">
-            <LayoutGrid size={18} strokeWidth={2.5} />
-          </div>
+          <img src="/logo.png" alt="Taky" className="h-9 w-9 rounded-xl object-cover" />
           <span className="hidden text-lg font-bold tracking-tight sm:inline">
             Taky
           </span>

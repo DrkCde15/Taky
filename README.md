@@ -1,3 +1,7 @@
+<div style="text-align: center;">
+  <img src="frontend/public/logo.png" alt="Taky logo" width="80" height="80" />
+</div>
+
 # Taky - Sistema de Gerenciamento de Tarefas
 
 Taky é um aplicativo de gerenciamento de tarefas construído com FastAPI + React (TanStack Start). Possui quadro Kanban com drag-and-drop, visão em calendário, gerenciamento de equipes e analytics para administradores.
