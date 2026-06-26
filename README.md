@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/logo.png" alt="Taky logo" width="64" height="64">
+  <img src="frontend/public/logo.png" alt="Taky logo" width="80" height="80">
 </p>
 
 # Taky - Sistema de Gerenciamento de Tarefas
