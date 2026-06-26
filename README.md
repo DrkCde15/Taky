@@ -73,15 +73,13 @@ O frontend roda em `http://localhost:5173` e faz requisições para o backend na
 | Endpoint | Método | Autenticação | Descrição |
 |---|---|---|---|
 | `/auth/register` | POST | — | Cadastrar usuário (admin/member) |
-| `/auth/token` | POST | — | Login, retorna JWT + refresh token |
-| `/auth/refresh` | POST | — | Renovar access token |
 | `/auth/me` | GET | Usuário | Perfil do usuário logado |
 | `/teams` | GET | — | Listar equipes |
 | `/teams` | POST | Admin | Criar equipe |
 | `/teams/{id}/join` | POST | Usuário | Entrar em uma equipe |
 | `/members` | GET | — | Listar membros |
 | `/members/{id}` | DELETE | Admin | Remover membro (limpa registros vinculados) |
-| `/tasks` | GET/POST | Usuário* | Listar / criar tarefas |
+| `/tasks` | GET/POST | Usuário/Admin  | Listar / criar tarefas |
 | `/tasks/{id}` | PUT/DELETE | Usuário/Admin | Atualizar / excluir tarefa |
 | `/tasks/{id}/comments` | POST | Usuário | Adicionar comentário |
 
