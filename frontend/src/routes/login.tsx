@@ -116,7 +116,7 @@ export function AuthShell({
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/15 backdrop-blur">
             <LayoutGrid size={20} strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-black tracking-tight">Tasky</span>
+          <span className="text-xl font-black tracking-tight">Taky</span>
         </div>
         <div className="text-primary-foreground">
           <h2 className="text-4xl font-black leading-tight tracking-tight">
@@ -127,7 +127,7 @@ export function AuthShell({
             para times que constroem juntos.
           </p>
         </div>
-        <div className="text-xs text-primary-foreground/70">© Tasky — todos os direitos reservados.</div>
+        <div className="text-xs text-primary-foreground/70">© Taky — todos os direitos reservados.</div>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-12">
@@ -136,7 +136,7 @@ export function AuthShell({
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--glow-primary)]">
               <LayoutGrid size={18} strokeWidth={2.5} />
             </div>
-            <span className="text-lg font-bold tracking-tight">Tasky</span>
+            <span className="text-lg font-bold tracking-tight">Taky</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight">{title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>

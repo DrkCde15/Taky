@@ -46,7 +46,7 @@ export default function Navbar({
             <LayoutGrid size={18} strokeWidth={2.5} />
           </div>
           <span className="hidden text-lg font-bold tracking-tight sm:inline">
-            Tasky
+            Taky
           </span>
         </Link>
 

@@ -8,7 +8,7 @@ class Settings:
     MYSQL_PORT: str = os.getenv("MYSQL_PORT", "3306")
     MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "")
-    MYSQL_DATABASE: str = os.getenv("MYSQL_DATABASE", "tasky_db")
+    MYSQL_DATABASE: str = os.getenv("MYSQL_DATABASE", "Taky_db")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change_me_in_production")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

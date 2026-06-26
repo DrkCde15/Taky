@@ -1,6 +1,6 @@
-# Tasky - Sistema de Gerenciamento de Tarefas
+# Taky - Sistema de Gerenciamento de Tarefas
 
-Tasky é um aplicativo de gerenciamento de tarefas construído com FastAPI + React (TanStack Start). Possui quadro Kanban com drag-and-drop, visão em calendário, gerenciamento de equipes e analytics para administradores.
+Taky é um aplicativo de gerenciamento de tarefas construído com FastAPI + React (TanStack Start). Possui quadro Kanban com drag-and-drop, visão em calendário, gerenciamento de equipes e analytics para administradores.
 
 ## Funcionalidades
 
@@ -48,7 +48,7 @@ pip install fastapi uvicorn sqlalchemy pymysql python-multipart python-jose pass
 # Configurar .env:
 # MYSQL_USER=root
 # MYSQL_PASSWORD=sua_senha
-# MYSQL_DATABASE=tasky_db
+# MYSQL_DATABASE=Taky_db
 # SECRET_KEY=sua_chave_secreta
 
 uvicorn main:app --reload --port 8000

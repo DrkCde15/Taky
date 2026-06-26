@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   TASKY — Refined dark design system
+   Taky — Refined dark design system
    Deep ink background, vivid cyan accent, soft glass surfaces.
    ============================================================ */
 
@@ -173,14 +173,14 @@
 
 /* React-Calendar overrides scoped via class */
 @layer components {
-  .rc-tasky .react-calendar {
+  .rc-Taky .react-calendar {
     width: 100% !important;
     background: transparent !important;
     border: none !important;
     color: var(--color-foreground) !important;
     font-family: inherit !important;
   }
-  .rc-tasky .react-calendar__tile {
+  .rc-Taky .react-calendar__tile {
     height: 72px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -191,40 +191,40 @@
     color: var(--color-foreground) !important;
     background: transparent !important;
   }
-  .rc-tasky .react-calendar__tile:enabled:hover,
-  .rc-tasky .react-calendar__tile:enabled:focus {
+  .rc-Taky .react-calendar__tile:enabled:hover,
+  .rc-Taky .react-calendar__tile:enabled:focus {
     background: oklch(1 0 0 / 0.05) !important;
   }
-  .rc-tasky .react-calendar__tile--now {
+  .rc-Taky .react-calendar__tile--now {
     background: oklch(0.78 0.16 220 / 0.10) !important;
     color: var(--color-primary) !important;
     font-weight: 700 !important;
   }
-  .rc-tasky .react-calendar__tile--active,
-  .rc-tasky .react-calendar__tile--active:enabled:hover {
+  .rc-Taky .react-calendar__tile--active,
+  .rc-Taky .react-calendar__tile--active:enabled:hover {
     background: var(--color-primary) !important;
     color: var(--primary-foreground) !important;
   }
-  .rc-tasky .react-calendar__month-view__days__day--neighboringMonth {
+  .rc-Taky .react-calendar__month-view__days__day--neighboringMonth {
     opacity: 0.25 !important;
   }
-  .rc-tasky .react-calendar__navigation button {
+  .rc-Taky .react-calendar__navigation button {
     color: var(--color-foreground) !important;
     font-weight: 700 !important;
     background: transparent !important;
     min-width: 36px;
   }
-  .rc-tasky .react-calendar__navigation button:enabled:hover,
-  .rc-tasky .react-calendar__navigation button:enabled:focus {
+  .rc-Taky .react-calendar__navigation button:enabled:hover,
+  .rc-Taky .react-calendar__navigation button:enabled:focus {
     background: oklch(1 0 0 / 0.05) !important;
   }
-  .rc-tasky .react-calendar__month-view__weekdays {
+  .rc-Taky .react-calendar__month-view__weekdays {
     text-transform: uppercase;
     font-size: 0.7rem;
     color: var(--color-muted-foreground);
     font-weight: 600;
   }
-  .rc-tasky .react-calendar__month-view__weekdays abbr {
+  .rc-Taky .react-calendar__month-view__weekdays abbr {
     text-decoration: none;
   }
 }

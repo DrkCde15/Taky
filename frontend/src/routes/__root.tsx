@@ -75,12 +75,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Tasky — Gestão de tarefas para equipes" },
+      { title: "Taky — Gestão de tarefas para equipes" },
       {
         name: "description",
         content: "Quadro Kanban, calendário e analytics para sua equipe.",
       },
-      { property: "og:title", content: "Tasky" },
+      { property: "og:title", content: "Taky" },
       { property: "og:description", content: "Gestão de tarefas para equipes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

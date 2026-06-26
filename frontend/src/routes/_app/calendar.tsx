@@ -66,7 +66,7 @@ function CalendarPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="glass rounded-2xl p-4 sm:p-6">
-            <div className="rc-tasky">
+            <div className="rc-Taky">
               <Calendar
                 value={selected}
                 onChange={(v) => setSelected(v as Date)}

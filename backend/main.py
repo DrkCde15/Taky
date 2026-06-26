@@ -9,7 +9,7 @@ import os
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Tasky API", version="2.0.0")
+app = FastAPI(title="Taky API", version="2.0.0")
 
 if not os.path.exists(settings.UPLOAD_DIR):
     os.makedirs(settings.UPLOAD_DIR)
