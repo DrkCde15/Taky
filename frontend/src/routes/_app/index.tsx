@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Column from "@/components/kanban/Column";
 import ModalEditTask from "@/components/kanban/ModalEditTask";
 import { useTaskStore, type Task } from "@/stores/useTaskStore";
+import { wsClient } from "@/lib/websocket";
 
 export const Route = createFileRoute("/_app/")({
   component: DashboardPage,
@@ -35,10 +36,17 @@ function DashboardPage() {
     moveTask,
     addTask,
     loading,
+    teams,
+    fetchTeams,
+    projects,
+    fetchProjects,
+    activeProjectId,
+    setActiveProject,
   } = useTaskStore();
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -46,10 +54,32 @@ function DashboardPage() {
 
   useEffect(() => {
     const c = new AbortController();
-    fetchTasks(c.signal);
     fetchMembers(c.signal);
+    fetchTeams(c.signal);
     return () => c.abort();
-  }, [fetchTasks, fetchMembers]);
+  }, [fetchMembers, fetchTeams]);
+
+  useEffect(() => {
+    if (selectedTeamId) {
+      fetchProjects(selectedTeamId);
+    }
+  }, [selectedTeamId, fetchProjects]);
+
+  useEffect(() => {
+    if (activeProjectId) {
+      const c = new AbortController();
+      fetchTasks(activeProjectId, c.signal);
+      wsClient.connect(activeProjectId);
+      wsClient.on("TASK_CREATED", () => fetchTasks(activeProjectId));
+      wsClient.on("TASK_UPDATED", () => fetchTasks(activeProjectId));
+      return () => {
+        c.abort();
+        wsClient.off("TASK_CREATED", () => fetchTasks(activeProjectId));
+        wsClient.off("TASK_UPDATED", () => fetchTasks(activeProjectId));
+        wsClient.disconnect();
+      };
+    }
+  }, [activeProjectId, fetchTasks]);
 
   const handleDragEnd = (e: DragEndEvent) => {
     if (e.over && e.active.id !== e.over.id) {
@@ -63,6 +93,97 @@ function DashboardPage() {
       : tasks.filter((t) => t.memberId === filterMemberId);
 
   const tasksByCol = (status: string) => filtered.filter((t) => t.status === status);
+
+  if (!activeProjectId) {
+    return (
+      <>
+        <Navbar members={members} />
+        <main className="mx-auto max-w-[1600px] px-4 py-12 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-lg text-center">
+            <h2 className="text-2xl font-bold">Selecione um Projeto</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Para ver o Kanban, escolha uma equipe e depois um projeto.
+            </p>
+            
+            <div className="mt-8 space-y-4 text-left">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Equipe</label>
+                <select 
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-1 px-3 py-3 text-sm outline-none focus:border-primary"
+                  value={selectedTeamId || ""}
+                  onChange={e => setSelectedTeamId(Number(e.target.value))}
+                >
+                  <option value="">Selecione uma equipe</option>
+                  {teams.map(t => <option key={t.id} value={t.id} className="bg-surface-2">{t.name}</option>)}
+                </select>
+              </div>
+
+              {selectedTeamId && (
+                <div className="mt-6">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">Projetos</label>
+                  <div className="grid gap-3">
+                    {projects.length === 0 ? (
+                      <p className="text-sm text-muted-foreground rounded-lg border border-dashed border-border p-4 text-center">Nenhum projeto encontrado para esta equipe.</p>
+                    ) : (
+                      projects.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => setActiveProject(p.id)}
+                          className="flex w-full items-center justify-between rounded-xl border border-border bg-surface-1 p-4 text-left transition-all hover:border-primary hover:shadow-[var(--glow-primary)]"
+                        >
+                          <div>
+                            <span className="block font-bold">{p.name}</span>
+                            {p.description && <span className="block text-xs text-muted-foreground mt-1">{p.description}</span>}
+                          </div>
+                          <span className="text-primary">&rarr;</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-xs font-semibold mb-2 text-muted-foreground">CRIAR NOVO PROJETO</p>
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const form = e.target as HTMLFormElement;
+                        const input = form.elements.namedItem("projectName") as HTMLInputElement;
+                        if (input.value.trim()) {
+                          try {
+                            await useTaskStore.getState().addProject(selectedTeamId, input.value.trim());
+                            input.value = "";
+                            toast.success("Projeto criado!");
+                          } catch (err: any) {
+                            toast.error(err.toString());
+                          }
+                        }
+                      }}
+                      className="flex gap-2"
+                    >
+                      <input 
+                        name="projectName"
+                        placeholder="Nome do novo projeto" 
+                        required
+                        className="flex-1 rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-primary"
+                      />
+                      <button 
+                        type="submit"
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:opacity-90"
+                      >
+                        Criar
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  const activeProject = projects.find(p => p.id === activeProjectId);
 
   return (
     <>
@@ -78,7 +199,7 @@ function DashboardPage() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Quadro Kanban
+              {activeProject?.name} / Kanban
             </p>
             <h1 className="text-gradient mt-1 text-3xl font-black tracking-tight sm:text-4xl">
               Fluxo de trabalho
@@ -88,6 +209,12 @@ function DashboardPage() {
               <span className="text-foreground">{filtered.length}</span> tarefas visíveis.
             </p>
           </div>
+          <button 
+            onClick={() => setActiveProject(null)}
+            className="text-sm font-semibold text-primary underline transition-opacity hover:opacity-80"
+          >
+            Trocar Projeto
+          </button>
         </div>
 
         {loading && tasks.length === 0 ? (

@@ -37,7 +37,6 @@ function AdminTeamSetup({
     setError("");
     try {
       const res = await api.post("/teams", { name: name.trim() });
-      await api.post(`/teams/${res.data.id}/join`);
       setUser({ ...user, team_id: res.data.id });
       toast.success(`Equipe "${res.data.name}" criada com sucesso!`);
     } catch (err: any) {

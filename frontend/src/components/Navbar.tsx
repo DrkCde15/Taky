@@ -101,14 +101,18 @@ export default function Navbar({
           <NotificationBell />
 
           {user && (
-            <div className="hidden items-center gap-2 rounded-lg border border-border bg-surface-1 px-2 py-1 sm:flex">
-              <div className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                {user.name?.[0]?.toUpperCase() ?? "?"}
+            <Link to="/profile" className="hidden items-center gap-2 rounded-lg border border-border bg-surface-1 px-2 py-1 transition-all hover:border-primary/50 hover:bg-surface-2 sm:flex">
+              <div className="grid h-7 w-7 place-items-center overflow-hidden rounded-full bg-primary/15 text-xs font-bold text-primary">
+                {user.avatar && user.avatar.startsWith('http') ? (
+                  <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  user.name?.[0]?.toUpperCase() ?? "?"
+                )}
               </div>
               <span className="max-w-[120px] truncate text-sm font-medium">
                 {user.name}
               </span>
-            </div>
+            </Link>
           )}
 
           <button

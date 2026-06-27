@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models.models import Task, TaskHistory, Comment, TaskFile, User, Notification
+from models.models import Task, TaskHistory, Comment, TaskFile, User, Notification, TimeLog
 from schemas.schemas import TaskCreate
 from fastapi import HTTPException, status
 from core.config import settings
@@ -17,8 +17,8 @@ STATUS_LABELS = {
 }
 
 
-def get_all_tasks(db: Session) -> list[Task]:
-    return db.query(Task).all()
+def get_all_tasks(db: Session, project_id: int) -> list[Task]:
+    return db.query(Task).filter(Task.project_id == project_id).all()
 
 
 def create_task(db: Session, task_data: TaskCreate, current_user: User) -> Task:
@@ -141,3 +141,23 @@ def upload_task_file(db: Session, task_id: int, file, current_user: User) -> Tas
     db.commit()
     db.refresh(db_file)
     return db_file
+
+def add_time_log(db: Session, task_id: int, user_id: int, timelog_data) -> TimeLog:
+    db_timelog = TimeLog(
+        task_id=task_id,
+        user_id=user_id,
+        time_spent=timelog_data.time_spent,
+        description=timelog_data.description
+    )
+    db.add(db_timelog)
+    
+    # Also log history
+    history = TaskHistory(task_id=task_id, user_id=user_id, action=f"Registrou {timelog_data.time_spent} horas de trabalho.")
+    db.add(history)
+    
+    db.commit()
+    db.refresh(db_timelog)
+    return db_timelog
+
+def get_time_logs(db: Session, task_id: int) -> list[TimeLog]:
+    return db.query(TimeLog).filter(TimeLog.task_id == task_id).all()

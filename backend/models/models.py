@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 import datetime
 from core.database import Base
 
@@ -12,9 +12,9 @@ class User(Base):
     password = Column(String(255))
     role = Column(String(20), default="member")
     avatar = Column(String(255))
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    
     tasks = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
-    team = relationship("Team", foreign_keys=[team_id])
+    team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
 
 
 class Team(Base):
@@ -22,7 +22,33 @@ class Team(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100))
     owner_id = Column(Integer, ForeignKey("users.id"))
-    tasks = relationship("Task", back_populates="team")
+    
+    members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
+    projects = relationship("Project", back_populates="team", cascade="all, delete-orphan")
+
+
+class TeamMember(Base):
+    __tablename__ = "team_members"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    team_id = Column(Integer, ForeignKey("teams.id"))
+    role = Column(String(20), default="member") # "admin", "member", "viewer"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="team_memberships")
+    team = relationship("Team", back_populates="members")
+
+
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    description = Column(Text, nullable=True)
+    team_id = Column(Integer, ForeignKey("teams.id"))
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    team = relationship("Team", back_populates="projects")
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
 
 
 class Task(Base):
@@ -34,16 +60,34 @@ class Task(Base):
     priority = Column(String(20), default="medium")
     tags = Column(String(255), default="")
     due_date = Column(DateTime, nullable=True)
-    time_spent = Column(Float, default=0.0)
     user_id = Column(Integer, ForeignKey("users.id"))
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    parent_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     owner = relationship("User", back_populates="tasks")
-    team = relationship("Team", back_populates="tasks")
+    project = relationship("Project", back_populates="tasks")
+    
+    subtasks = relationship("Task", back_populates="parent")
+    parent = relationship("Task", back_populates="subtasks", remote_side=[id])
+    
     comments = relationship("Comment", back_populates="task", cascade="all, delete-orphan")
     history = relationship("TaskHistory", back_populates="task", cascade="all, delete-orphan")
     files = relationship("TaskFile", back_populates="task", cascade="all, delete-orphan")
+    timelogs = relationship("TimeLog", back_populates="task", cascade="all, delete-orphan")
+
+
+class TimeLog(Base):
+    __tablename__ = "time_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    time_spent = Column(Float) # in hours
+    description = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    task = relationship("Task", back_populates="timelogs")
+    user = relationship("User")
 
 
 class Comment(Base):

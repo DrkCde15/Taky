@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppTeamsRouteImport } from './routes/_app/teams'
+import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppCalendarRouteImport } from './routes/_app/calendar'
 import { Route as AppAdminRouteImport } from './routes/_app/admin'
 
@@ -41,6 +42,11 @@ const AppTeamsRoute = AppTeamsRouteImport.update({
   path: '/teams',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCalendarRoute = AppCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/admin': typeof AppAdminRoute
   '/calendar': typeof AppCalendarRoute
+  '/profile': typeof AppProfileRoute
   '/teams': typeof AppTeamsRoute
 }
 export interface FileRoutesByTo {
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/admin': typeof AppAdminRoute
   '/calendar': typeof AppCalendarRoute
+  '/profile': typeof AppProfileRoute
   '/teams': typeof AppTeamsRoute
   '/': typeof AppIndexRoute
 }
@@ -75,14 +83,29 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_app/admin': typeof AppAdminRoute
   '/_app/calendar': typeof AppCalendarRoute
+  '/_app/profile': typeof AppProfileRoute
   '/_app/teams': typeof AppTeamsRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/admin' | '/calendar' | '/teams'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/admin'
+    | '/calendar'
+    | '/profile'
+    | '/teams'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/register' | '/admin' | '/calendar' | '/teams' | '/'
+  to:
+    | '/login'
+    | '/register'
+    | '/admin'
+    | '/calendar'
+    | '/profile'
+    | '/teams'
+    | '/'
   id:
     | '__root__'
     | '/_app'
@@ -90,6 +113,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/_app/admin'
     | '/_app/calendar'
+    | '/_app/profile'
     | '/_app/teams'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -137,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTeamsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/profile': {
+      id: '/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/calendar': {
       id: '/_app/calendar'
       path: '/calendar'
@@ -157,6 +188,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
   AppCalendarRoute: typeof AppCalendarRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppTeamsRoute: typeof AppTeamsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -164,6 +196,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRoute,
   AppCalendarRoute: AppCalendarRoute,
+  AppProfileRoute: AppProfileRoute,
   AppTeamsRoute: AppTeamsRoute,
   AppIndexRoute: AppIndexRoute,
 }

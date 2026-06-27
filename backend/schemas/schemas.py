@@ -1,8 +1,23 @@
 from pydantic import BaseModel, field_validator
-from typing import List, Optional
+from typing import List, Optional, ForwardRef
 from datetime import datetime
 import re
 
+class TimeLogBase(BaseModel):
+    time_spent: float
+    description: Optional[str] = None
+
+class TimeLogCreate(TimeLogBase):
+    pass
+
+class TimeLogResponse(TimeLogBase):
+    id: int
+    task_id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class TaskBase(BaseModel):
     title: str
@@ -11,9 +26,9 @@ class TaskBase(BaseModel):
     priority: str = "medium"
     tags: str = ""
     due_date: Optional[datetime] = None
-    time_spent: float
     user_id: Optional[int] = None
-    team_id: Optional[int] = None
+    project_id: int
+    parent_id: Optional[int] = None
 
     @field_validator("priority")
     @classmethod
@@ -29,15 +44,12 @@ class TaskBase(BaseModel):
             raise ValueError("Status inválido")
         return v
 
-
 class TaskCreate(TaskBase):
     pass
-
 
 class CommentBase(BaseModel):
     content: str
     user_id: int
-
 
 class Comment(CommentBase):
     id: int
@@ -46,7 +58,6 @@ class Comment(CommentBase):
 
     class Config:
         from_attributes = True
-
 
 class TaskFileResponse(BaseModel):
     id: int
@@ -58,7 +69,6 @@ class TaskFileResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class TaskHistoryResponse(BaseModel):
     id: int
     action: str
@@ -67,17 +77,19 @@ class TaskHistoryResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class Task(TaskBase):
     id: int
     created_at: datetime
     comments: List[Comment] = []
     files: List[TaskFileResponse] = []
     history: List[TaskHistoryResponse] = []
+    timelogs: List[TimeLogResponse] = []
+    subtasks: List['Task'] = []
 
     class Config:
         from_attributes = True
 
+Task.model_rebuild()
 
 class UserCreate(BaseModel):
     name: str
@@ -108,6 +120,20 @@ class UserCreate(BaseModel):
             raise ValueError("Formato de e-mail inválido")
         return v
 
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    avatar: Optional[str] = None
+
+class TeamMemberResponse(BaseModel):
+    id: int
+    user_id: int
+    team_id: int
+    role: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class User(BaseModel):
     id: int
@@ -115,11 +141,10 @@ class User(BaseModel):
     email: str
     role: str
     avatar: str
-    team_id: Optional[int] = None
+    team_memberships: List[TeamMemberResponse] = []
 
     class Config:
         from_attributes = True
-
 
 class Token(BaseModel):
     access_token: str
@@ -127,36 +152,46 @@ class Token(BaseModel):
     token_type: str
     user: User
 
-
 class RefreshRequest(BaseModel):
     refresh_token: str
-
 
 class TeamBase(BaseModel):
     name: str
 
-
 class TeamCreate(TeamBase):
     pass
-
 
 class Team(TeamBase):
     id: int
     owner_id: int
+    members: List[TeamMemberResponse] = []
 
     class Config:
         from_attributes = True
 
+class ProjectBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    team_id: int
+
+class ProjectCreate(ProjectBase):
+    pass
+
+class Project(ProjectBase):
+    id: int
+    created_at: datetime
+    tasks: List[Task] = []
+
+    class Config:
+        from_attributes = True
 
 class InviteCreate(BaseModel):
     pass
-
 
 class InviteResponse(BaseModel):
     token: str
     expires_at: datetime
     invite_url: str
-
 
 class NotificationResponse(BaseModel):
     id: int

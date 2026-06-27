@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from core.database import get_db
 from core.security import get_current_user, get_current_admin
-from schemas.schemas import UserCreate, User, Token, RefreshRequest, InviteResponse
+from schemas.schemas import UserCreate, User, Token, RefreshRequest, InviteResponse, UserUpdate
 from services import auth_service
 from models.models import User as UserModel
 
@@ -29,6 +29,15 @@ def refresh_token(request: RefreshRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=User)
 def get_me(current_user: UserModel = Depends(get_current_user)):
     return current_user
+
+
+@router.put("/me", response_model=User)
+def update_me(
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    return auth_service.update_user(db, current_user.id, user_data)
 
 
 @router.post("/invite", response_model=InviteResponse)

@@ -13,8 +13,8 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 @router.get("", response_model=List[Task])
-def get_tasks(db: Session = Depends(get_db)):
-    return task_service.get_all_tasks(db)
+def get_tasks(project_id: int, db: Session = Depends(get_db)):
+    return task_service.get_all_tasks(db, project_id)
 
 
 @router.post("", response_model=Task)
@@ -78,3 +78,14 @@ def download_file(
 def delete_task(task_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)):
     task_service.delete_task(db, task_id)
     return {"message": "Task deleted"}
+
+
+from schemas.schemas import TimeLogCreate, TimeLogResponse
+
+@router.post("/{task_id}/timelogs", response_model=TimeLogResponse)
+def add_time_log(task_id: int, timelog: TimeLogCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return task_service.add_time_log(db, task_id, current_user.id, timelog)
+
+@router.get("/{task_id}/timelogs", response_model=List[TimeLogResponse])
+def get_time_logs(task_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return task_service.get_time_logs(db, task_id)

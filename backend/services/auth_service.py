@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from models.models import User, InviteToken
-from schemas.schemas import UserCreate
+from schemas.schemas import UserCreate, UserUpdate
 from core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from core.config import settings
 from fastapi import HTTPException, status
@@ -100,3 +100,24 @@ def use_invite_token(db: Session, token: str) -> None:
     invite = validate_invite_token(db, token)
     invite.used = 1
     db.commit()
+
+def update_user(db: Session, user_id: int, update_data: UserUpdate) -> User:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    if update_data.email and update_data.email != user.email:
+        existing = db.query(User).filter(User.email == update_data.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="E-mail já cadastrado")
+        user.email = update_data.email
+        
+    if update_data.name is not None:
+        user.name = update_data.name
+    if update_data.avatar is not None:
+        user.avatar = update_data.avatar
+        
+    db.commit()
+    db.refresh(user)
+    return user
+

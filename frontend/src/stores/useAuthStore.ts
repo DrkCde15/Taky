@@ -9,6 +9,12 @@ export interface AuthUser {
   role?: string;
   avatar?: string;
   team_id?: number | null;
+  team_memberships?: {
+    id: number;
+    team_id: number;
+    role: string;
+    created_at: string;
+  }[];
 }
 
 interface AuthState {
@@ -19,6 +25,7 @@ interface AuthState {
   setToken: (token: string | null) => void;
   login: (email: string, password: string) => Promise<any>;
   register: (data: { name: string; email: string; password: string; role?: string }) => Promise<any>;
+  updateProfile: (data: { name?: string; email?: string; avatar?: string }) => Promise<any>;
   logout: () => void;
 }
 
@@ -59,6 +66,16 @@ export const useAuthStore = create<AuthState>()(
             throw detail.map((e: any) => e.msg).join("; ");
           }
           throw detail || "Registration failed";
+        }
+      },
+
+      updateProfile: async (data) => {
+        try {
+          const response = await api.put("/auth/me", data);
+          set({ user: response.data });
+          return response.data;
+        } catch (error: any) {
+          throw error.response?.data?.detail || "Update failed";
         }
       },
 

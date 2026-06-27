@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useTaskStore, type Member, type Task } from "@/stores/useTaskStore";
 import ConfirmModal from "@/components/ConfirmModal";
+import MDEditor from "@uiw/react-md-editor";
 
 const STATUSES = [
   { id: "todo", label: "A Fazer" },
@@ -178,13 +179,15 @@ export default function ModalEditTask({ task, members, onClose }: Props) {
                     <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       Descrição
                     </label>
-                    <textarea
-                      value={edited.description}
-                      onChange={(e) => handleUpdate("description", e.target.value)}
-                      placeholder="Descreva esta tarefa..."
-                      rows={5}
-                      className="mt-2 w-full resize-none rounded-lg border border-border bg-surface-1 p-3 text-sm outline-none transition-colors focus:border-primary"
-                    />
+                    <div data-color-mode="dark" className="mt-2">
+                      <MDEditor
+                        value={edited.description}
+                        onChange={(val) => handleUpdate("description", val || "")}
+                        preview="live"
+                        height={300}
+                        style={{ backgroundColor: "var(--surface-1)", border: "1px solid var(--border)" }}
+                      />
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -222,13 +225,15 @@ export default function ModalEditTask({ task, members, onClose }: Props) {
               {activeTab === "comments" && (
                 <div className="space-y-5">
                   <div className="space-y-2 rounded-xl border border-border bg-surface-1 p-3">
-                    <textarea
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      placeholder="Escreva um comentário..."
-                      rows={3}
-                      className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                    />
+                    <div data-color-mode="dark">
+                      <MDEditor
+                        value={commentInput}
+                        onChange={(val) => setCommentInput(val || "")}
+                        preview="edit"
+                        height={120}
+                        style={{ backgroundColor: "transparent", border: "none" }}
+                      />
+                    </div>
                     <button
                       onClick={handleAddComment}
                       className="ml-auto flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-glow"
@@ -261,9 +266,9 @@ export default function ModalEditTask({ task, members, onClose }: Props) {
                                   {format(new Date(c.created_at), "dd MMM, HH:mm")}
                                 </span>
                               </div>
-                              <p className="mt-1 rounded-xl rounded-tl-sm border border-border bg-surface-1 px-3 py-2 text-sm">
-                                {c.content}
-                              </p>
+                              <div data-color-mode="dark" className="mt-1 rounded-xl rounded-tl-sm border border-border bg-surface-1 px-3 py-2 text-sm">
+                                <MDEditor.Markdown source={c.content} style={{ backgroundColor: "transparent", fontSize: "14px" }} />
+                              </div>
                             </div>
                           </div>
                         ))
