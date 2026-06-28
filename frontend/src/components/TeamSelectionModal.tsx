@@ -13,7 +13,7 @@ interface Team {
 export default function TeamSelectionModal() {
   const { user, setUser } = useAuthStore();
 
-  if (!user || user.team_id) return null;
+  if (!user || (user.team_memberships?.length ?? 0) > 0) return null;
 
   if (user.role === "admin") return <AdminTeamSetup user={user} setUser={setUser} />;
   return <MemberTeamSelection user={user} setUser={setUser} />;
@@ -37,7 +37,11 @@ function AdminTeamSetup({
     setError("");
     try {
       const res = await api.post("/teams", { name: name.trim() });
-      setUser({ ...user, team_id: res.data.id });
+      const membership = res.data.members?.find((m: any) => m.user_id === user.id);
+      setUser({
+        ...user,
+        team_memberships: membership ? [...(user.team_memberships || []), membership] : user.team_memberships
+      });
       toast.success(`Equipe "${res.data.name}" criada com sucesso!`);
     } catch (err: any) {
       setError(err.response?.data?.detail || "Erro ao criar equipe");
@@ -111,7 +115,7 @@ function MemberTeamSelection({
     setError("");
     try {
       const res = await api.post(`/teams/${teamId}/join`);
-      setUser({ ...user, team_id: res.data.team_id });
+      setUser({ ...user, team_memberships: res.data.team_memberships });
       toast.success("Você entrou na equipe!");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Erro ao entrar na equipe");
