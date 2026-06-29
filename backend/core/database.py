@@ -2,12 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from core.config import settings
 
-SQLALCHEMY_DATABASE_URL = (
-    f"mysql+pymysql://{settings.MYSQL_USER}:{settings.MYSQL_PASSWORD}"
-    f"@{settings.MYSQL_HOST}:{settings.MYSQL_PORT}/{settings.MYSQL_DATABASE}"
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 )
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
