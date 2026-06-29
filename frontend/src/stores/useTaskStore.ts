@@ -82,6 +82,8 @@ interface TaskState {
   addTeam: (name: string) => Promise<any>;
   fetchProjects: (teamId: number, signal?: AbortSignal) => Promise<void>;
   addProject: (teamId: number, name: string, description?: string) => Promise<any>;
+  updateTeam: (teamId: number, name: string) => Promise<void>;
+  deleteTeam: (teamId: number) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>()((set, get) => ({
@@ -279,6 +281,26 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
       return resp.data;
     } catch (e: any) {
       throw new Error(e.response?.data?.detail || "Falha ao criar projeto");
+    }
+  },
+
+  updateTeam: async (teamId: number, name: string) => {
+    try {
+      await api.put(`/teams/${teamId}`, { name });
+      get().fetchTeams();
+    } catch (e: any) {
+      const message = e.response?.data?.detail || "Falha ao renomear equipe";
+      throw new Error(message);
+    }
+  },
+
+  deleteTeam: async (teamId: number) => {
+    try {
+      await api.delete(`/teams/${teamId}`);
+      get().fetchTeams();
+    } catch (e: any) {
+      const message = e.response?.data?.detail || "Falha ao excluir equipe";
+      throw new Error(message);
     }
   },
 }));

@@ -34,7 +34,9 @@ export default function Navbar({
     navigate({ to: "/login" });
   };
 
-  const links = user?.role === "admin"
+  const isAdminOrOwner =
+    user?.role === "admin" || (user?.team_memberships?.some((m) => m.role === "admin") ?? false);
+  const links = isAdminOrOwner
     ? [...NAV, { to: "/admin" as const, label: "Analytics", icon: BarChart3 }]
     : NAV;
 
@@ -43,9 +45,7 @@ export default function Navbar({
       <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <img src="/logo.png" alt="Taky" className="h-9 w-9 rounded-xl object-cover" />
-          <span className="hidden text-lg font-bold tracking-tight sm:inline">
-            Taky
-          </span>
+          <span className="hidden text-lg font-bold tracking-tight sm:inline">Taky</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -101,17 +101,18 @@ export default function Navbar({
           <NotificationBell />
 
           {user && (
-            <Link to="/profile" className="hidden items-center gap-2 rounded-lg border border-border bg-surface-1 px-2 py-1 transition-all hover:border-primary/50 hover:bg-surface-2 sm:flex">
+            <Link
+              to="/profile"
+              className="hidden items-center gap-2 rounded-lg border border-border bg-surface-1 px-2 py-1 transition-all hover:border-primary/50 hover:bg-surface-2 sm:flex"
+            >
               <div className="grid h-7 w-7 place-items-center overflow-hidden rounded-full bg-primary/15 text-xs font-bold text-primary">
-                {user.avatar && user.avatar.startsWith('http') ? (
+                {user.avatar && user.avatar.startsWith("http") ? (
                   <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
-                  user.name?.[0]?.toUpperCase() ?? "?"
+                  (user.name?.[0]?.toUpperCase() ?? "?")
                 )}
               </div>
-              <span className="max-w-[120px] truncate text-sm font-medium">
-                {user.name}
-              </span>
+              <span className="max-w-[120px] truncate text-sm font-medium">{user.name}</span>
             </Link>
           )}
 

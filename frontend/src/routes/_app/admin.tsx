@@ -22,7 +22,11 @@ export const Route = createFileRoute("/_app/admin")({
     try {
       const raw = window.localStorage.getItem("auth-storage");
       const auth = raw ? JSON.parse(raw) : null;
-      if (auth?.state?.user?.role !== "admin") {
+      const user = auth?.state?.user;
+      const isAdminOrOwner =
+        user?.role === "admin" ||
+        (user?.team_memberships?.some((m: any) => m.role === "admin") ?? false);
+      if (!isAdminOrOwner) {
         throw redirect({ to: "/" });
       }
     } catch (e) {
@@ -73,7 +77,7 @@ function AdminPage() {
         name: STATUS_LABEL[status],
         value: tasks.filter((t) => t.status === status).length,
       })),
-    [tasks]
+    [tasks],
   );
 
   const prioData = useMemo(
@@ -82,7 +86,7 @@ function AdminPage() {
         name: p,
         value: tasks.filter((t) => t.priority === p).length,
       })),
-    [tasks]
+    [tasks],
   );
 
   const perMember = useMemo(
@@ -94,7 +98,7 @@ function AdminPage() {
           .filter((t) => t.memberId === String(m.id))
           .reduce((sum, t) => sum + (t.timeSpent || 0), 0),
       })),
-    [members, tasks]
+    [members, tasks],
   );
 
   return (

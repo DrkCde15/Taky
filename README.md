@@ -219,6 +219,59 @@ npm run preview
 
 ---
 
+## Deploy (GitHub Pages)
+
+O frontend pode ser publicado no **GitHub Pages** via GitHub Actions.
+
+### Pré-requisitos
+
+1. O repositório deve estar no GitHub (público ou privado com GitHub Pages habilitado).
+2. Nas configurações do repositório, vá em **Settings > Pages** e selecione **GitHub Actions** como origem.
+
+### Como funciona
+
+- O workflow em `.github/workflows/deploy.yml` é acionado automaticamente em pushes para `main` que alterem arquivos em `frontend/`.
+- O build usa o **Nitro preset `static`**, gerando HTML estático em `.output/public/` para cada rota.
+- O artifact é enviado ao GitHub Pages via `actions/deploy-pages`.
+
+### Build manual (comprovante local)
+
+```bash
+cd frontend
+$env:NITRO_PRESET="static"
+npx vite build --base="/nome-do-repositorio/"
+```
+
+> O `--base` deve corresponder ao subpath do GitHub Pages. Para `username.github.io/repo`, use `--base=/repo/`. Para `username.github.io`, use `--base=/`.
+
+### Variáveis de ambiente de build
+
+| Variável | Build | Descrição |
+|----------|-------|-----------|
+| `NITRO_PRESET` | `static` | Gera site estático (sem servidor Node) |
+| `VITE_BASE_PATH` | `--base` | Base path para o roteador TanStack Router |
+| `BASE_PATH` | `--base` | Base path para assets do Vite |
+
+> O workflow usa `actions/configure-pages` para detectar automaticamente o `base_path` correto.
+
+### Estrutura de saída
+
+O build gera:
+
+```
+frontend/.output/public/
+├── index.html            # Rota raiz
+├── assets/               # JS/CSS compilados
+├── teams/index.html      # Rota /teams
+├── tasks/index.html      # Rota /tasks
+├── admin/index.html      # Rota /admin
+└── ...
+```
+
+Cada rota do TanStack Router vira um arquivo HTML independente — navegação direta funciona sem `404.html`.
+
+---
+
 ## Variáveis de Ambiente (.env)
 
 | Variável | Padrão | Descrição |

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Users, Plus, Trash2, Mail, Crown } from "lucide-react";
+import { Users, Plus, Trash2, Mail, Crown, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -12,11 +12,22 @@ export const Route = createFileRoute("/_app/teams")({
 });
 
 function TeamsPage() {
-  const { members, teams, fetchMembers, fetchTeams, addTeam, deleteMember } = useTaskStore();
+  const {
+    members,
+    teams,
+    fetchMembers,
+    fetchTeams,
+    addTeam,
+    deleteMember,
+    updateTeam,
+    deleteTeam,
+  } = useTaskStore();
   const { user } = useAuthStore();
   const [newTeam, setNewTeam] = useState("");
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<number | null>(null);
+  const [editingTeam, setEditingTeam] = useState<{ id: number; name: string } | null>(null);
+  const [confirmDeleteTeam, setConfirmDeleteTeam] = useState<number | null>(null);
 
   useEffect(() => {
     const c = new AbortController();
@@ -40,6 +51,30 @@ function TeamsPage() {
       setCreating(false);
     }
   };
+
+  const handleRename = async () => {
+    if (!editingTeam || !editingTeam.name.trim()) return;
+    try {
+      await updateTeam(editingTeam.id, editingTeam.name.trim());
+      setEditingTeam(null);
+      toast.success("Equipe renomeada!");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao renomear equipe");
+    }
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!confirmDeleteTeam) return;
+    try {
+      await deleteTeam(confirmDeleteTeam);
+      setConfirmDeleteTeam(null);
+      toast.success("Equipe excluída!");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao excluir equipe");
+    }
+  };
+
+  const userOwnedTeamIds = teams.filter((t) => t.owner_id === user?.id).map((t) => t.id);
 
   return (
     <>
@@ -92,22 +127,43 @@ function TeamsPage() {
                   Nenhuma equipe ainda.
                 </li>
               ) : (
-                teams.map((t) => (
-                  <li
-                    key={t.id}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface-1 px-3 py-2.5"
-                  >
-                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/15 text-primary font-bold">
-                      {t.name[0]?.toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Owner #{t.owner_id}
-                      </p>
-                    </div>
-                  </li>
-                ))
+                teams.map((t) => {
+                  const isOwner = t.owner_id === user?.id;
+                  return (
+                    <li
+                      key={t.id}
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface-1 px-3 py-2.5"
+                    >
+                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/15 font-bold text-primary">
+                        {t.name[0]?.toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{t.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isOwner ? "Você é o administrador" : "Membro"}
+                        </p>
+                      </div>
+                      {isOwner && (
+                        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            onClick={() => setEditingTeam({ id: t.id, name: t.name })}
+                            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-surface-3 hover:text-foreground"
+                            title="Renomear"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteTeam(t.id)}
+                            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-surface-3 hover:text-destructive"
+                            title="Excluir"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })
               )}
             </ul>
           </section>
@@ -137,9 +193,7 @@ function TeamsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="truncate text-sm font-bold">{m.name}</p>
-                          {isOwner && (
-                            <Crown size={12} className="text-warning" />
-                          )}
+                          {isOwner && <Crown size={12} className="text-warning" />}
                         </div>
                         {m.email && (
                           <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
@@ -151,7 +205,7 @@ function TeamsPage() {
                           {m.role ?? "member"}
                         </span>
                       </div>
-                      {isAdmin && m.id !== user?.id && (
+                      {userOwnedTeamIds.length > 0 && m.id !== user?.id && (
                         <button
                           onClick={() => setToDelete(m.id)}
                           className="opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
@@ -168,6 +222,58 @@ function TeamsPage() {
           </section>
         </div>
       </main>
+
+      {editingTeam && (
+        <div
+          onClick={() => setEditingTeam(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="glass-strong w-full max-w-md rounded-2xl p-6"
+          >
+            <h3 className="text-lg font-bold tracking-tight">Renomear equipe</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRename();
+              }}
+              className="mt-4 space-y-4"
+            >
+              <input
+                value={editingTeam.name}
+                onChange={(e) => setEditingTeam({ ...editingTeam, name: e.target.value })}
+                autoFocus
+                className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeam(null)}
+                  className="flex-1 rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-sm font-semibold hover:bg-surface-3"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-[image:var(--gradient-primary)] px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-[var(--glow-primary)]"
+                >
+                  Salvar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteTeam !== null && (
+        <ConfirmModal
+          title="Excluir equipe?"
+          message="Esta ação não pode ser desfeita. Todos os projetos e tarefas serão perdidos."
+          onConfirm={handleDeleteTeam}
+          onCancel={() => setConfirmDeleteTeam(null)}
+        />
+      )}
 
       {toDelete !== null && (
         <ConfirmModal

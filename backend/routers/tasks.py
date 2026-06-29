@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import os
 from core.database import get_db
-from core.security import get_current_user, get_current_admin
+from core.security import get_current_user
 from schemas.schemas import TaskCreate, Task, Comment, CommentBase
 from services import task_service
 from models.models import User, TaskFile
@@ -13,8 +13,12 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 @router.get("", response_model=List[Task])
-def get_tasks(project_id: int, db: Session = Depends(get_db)):
-    return task_service.get_all_tasks(db, project_id)
+def get_tasks(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return task_service.get_all_tasks(db, project_id, current_user)
 
 
 @router.post("", response_model=Task)
@@ -75,8 +79,12 @@ def download_file(
 
 
 @router.delete("/{task_id}")
-def delete_task(task_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)):
-    task_service.delete_task(db, task_id)
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    task_service.delete_task(db, task_id, current_user)
     return {"message": "Task deleted"}
 
 

@@ -17,12 +17,21 @@ STATUS_LABELS = {
 }
 
 
-def get_all_tasks(db: Session, project_id: int) -> list[Task]:
-    return db.query(Task).filter(Task.project_id == project_id).all()
+def get_all_tasks(db: Session, project_id: int, current_user: User) -> list[Task]:
+    query = db.query(Task).filter(Task.project_id == project_id)
+    if current_user.role == "admin":
+        query = query.filter(
+            (Task.creator_id == current_user.id) | (Task.creator_id.is_(None))
+        )
+    else:
+        query = query.filter(
+            (Task.user_id == current_user.id) | (Task.creator_id == current_user.id)
+        )
+    return query.all()
 
 
 def create_task(db: Session, task_data: TaskCreate, current_user: User) -> Task:
-    db_task = Task(**task_data.model_dump())
+    db_task = Task(**task_data.model_dump(), creator_id=current_user.id)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
@@ -45,6 +54,9 @@ def update_task(db: Session, task_id: int, task_update: TaskCreate, current_user
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    if db_task.creator_id and db_task.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o criador da tarefa pode editá-la")
 
     changes = []
     if db_task.status != task_update.status:
@@ -83,10 +95,14 @@ def update_task(db: Session, task_id: int, task_update: TaskCreate, current_user
     return db_task
 
 
-def delete_task(db: Session, task_id: int) -> None:
+def delete_task(db: Session, task_id: int, current_user: User) -> None:
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    if db_task.creator_id and db_task.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o criador da tarefa pode excluí-la")
+
     db.delete(db_task)
     db.commit()
 
@@ -150,11 +166,10 @@ def add_time_log(db: Session, task_id: int, user_id: int, timelog_data) -> TimeL
         description=timelog_data.description
     )
     db.add(db_timelog)
-    
-    # Also log history
+
     history = TaskHistory(task_id=task_id, user_id=user_id, action=f"Registrou {timelog_data.time_spent} horas de trabalho.")
     db.add(history)
-    
+
     db.commit()
     db.refresh(db_timelog)
     return db_timelog

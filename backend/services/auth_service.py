@@ -19,9 +19,6 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     if user_count == 0:
         role = "admin"
     elif user_data.role == "admin":
-        existing_admin = db.query(User).filter(User.role == "admin").first()
-        if existing_admin:
-            raise HTTPException(status_code=400, detail="Já existe um administrador no sistema")
         role = "admin"
     else:
         role = "member"

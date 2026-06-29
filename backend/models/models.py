@@ -13,7 +13,7 @@ class User(Base):
     role = Column(String(20), default="member")
     avatar = Column(String(255))
     
-    tasks = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="owner", foreign_keys="Task.user_id", cascade="all, delete-orphan")
     team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -61,11 +61,13 @@ class Task(Base):
     tags = Column(String(255), default="")
     due_date = Column(DateTime, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"))
     parent_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    owner = relationship("User", back_populates="tasks")
+    owner = relationship("User", back_populates="tasks", foreign_keys=[user_id])
+    creator = relationship("User", foreign_keys=[creator_id])
     project = relationship("Project", back_populates="tasks")
     
     subtasks = relationship("Task", back_populates="parent")

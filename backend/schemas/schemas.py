@@ -80,6 +80,7 @@ class TaskHistoryResponse(BaseModel):
 class Task(TaskBase):
     id: int
     created_at: datetime
+    creator_id: Optional[int] = None
     comments: List[Comment] = []
     files: List[TaskFileResponse] = []
     history: List[TaskHistoryResponse] = []
