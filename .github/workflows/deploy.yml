@@ -45,15 +45,15 @@ jobs:
           VITE_BASE_PATH: ${{ steps.configure.outputs.base_path }}
 
       - name: Copy 404.html for SPA routing
-        run: cp .output/public/index.html .output/public/404.html
+        run: cp dist/index.html dist/404.html
 
       - name: Create .nojekyll
-        run: touch .output/public/.nojekyll
+        run: touch dist/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/.output/public
+          path: frontend/dist
 
       - name: Deploy to GitHub Pages
         id: deployment

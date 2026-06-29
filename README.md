@@ -231,7 +231,7 @@ O frontend pode ser publicado no **GitHub Pages** via GitHub Actions.
 ### Como funciona
 
 - O workflow em `.github/workflows/deploy.yml` é acionado automaticamente em pushes para `main` que alterem arquivos em `frontend/`.
-- O build gera os assets em `.output/public/` (HTML, JS, CSS).
+- O build gera os assets em `dist/` (HTML, JS, CSS) — sem SSR, apenas cliente.
 - O workflow copia `index.html` como `404.html` — o GitHub Pages serve esse arquivo para qualquer rota desconhecida, permitindo que o roteador client-side (TanStack Router) assuma o controle.
 - O artifact é enviado ao GitHub Pages via `actions/deploy-pages`.
 
@@ -272,7 +272,7 @@ Para que o GitHub Pages funcione com o backend rodando na sua máquina:
 O deploy usa **single-page application (SPA)** fallback:
 
 ```
-frontend/.output/public/
+frontend/dist/
 ├── index.html            # App shell (entrada do SPA)
 ├── 404.html              # Cópia do index.html — GitHub Pages serve para rotas desconhecidas
 ├── assets/               # JS/CSS compilados
