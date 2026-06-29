@@ -48,12 +48,17 @@ jobs:
         run: |
           cp ./dist/index.html ./dist/404.html
 
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          folder: ./dist
+          path: ./frontend/dist
+
+      - name: Deploy to GitHub Pages
         id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Output deployment URL
         run: echo "Deployed to ${{ steps.deployment.outputs.page_url }}"
