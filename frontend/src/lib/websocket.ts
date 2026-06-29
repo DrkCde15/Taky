@@ -1,3 +1,7 @@
+import { baseURL } from "../utils/api";
+
+const wsBase = baseURL.replace(/^http/, "ws");
+
 class WebSocketClient {
   private ws: WebSocket | null = null;
   private projectId: number | null = null;
@@ -11,7 +15,7 @@ class WebSocketClient {
     this.disconnect();
     
     this.projectId = projectId;
-    this.url = `ws://localhost:8000/ws/projects/${projectId}`;
+    this.url = `${wsBase}/ws/projects/${projectId}`;
     this.setupConnection();
   }
 

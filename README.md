@@ -250,9 +250,23 @@ npx vite build --base="/nome-do-repositorio/"
 |----------|-------|-----------|
 | `NITRO_PRESET` | `static` | Gera site estático (sem servidor Node) |
 | `VITE_BASE_PATH` | `--base` | Base path para o roteador TanStack Router |
+| `VITE_API_URL` | `http://localhost:8000` | URL do backend — mantenha o padrão para usar o backend local |
 | `BASE_PATH` | `--base` | Base path para assets do Vite |
 
 > O workflow usa `actions/configure-pages` para detectar automaticamente o `base_path` correto.
+> O `VITE_API_URL` não precisa ser alterado se o backend estiver rodando em `localhost:8000`.
+
+### Rodar o site hospedado com backend local
+
+Para que o GitHub Pages funcione com o backend rodando na sua máquina:
+
+1. **CORS** — Adicione a URL do GitHub Pages no `ALLOWED_ORIGINS` do backend (`backend/.env`):
+   ```dotenv
+   ALLOWED_ORIGINS=http://localhost:5173,https://seu-usuario.github.io
+   ```
+2. **WebSocket** — A URL do WebSocket é derivada automaticamente do `VITE_API_URL` (padrão `http://localhost:8000` → `ws://localhost:8000`). Nenhuma configuração extra necessária.
+
+> Se o backend for para a nuvem no futuro, basta definir `VITE_API_URL=https://seudominio.com` no build.
 
 ### Estrutura de saída
 
@@ -282,7 +296,7 @@ Cada rota do TanStack Router vira um arquivo HTML independente — navegação d
 | `MYSQL_PASSWORD` | — | Senha MySQL |
 | `MYSQL_DATABASE` | `taky_db` | Nome do banco |
 | `SECRET_KEY` | `change_me_in_production` | Chave para assinar JWT |
-| `ALLOWED_ORIGINS` | `http://localhost:5173` | Origens permitidas no CORS |
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | Origens permitidas no CORS (separadas por vírgula). Inclua a URL do GitHub Pages se for usar o site hospedado com backend local |
 
 > A senha deve ter no mínimo 8 caracteres, com ao menos 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial.
 
