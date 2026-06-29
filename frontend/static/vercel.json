@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "buildCommand": null,
-  "outputDirectory": ".",
-  "devCommand": null,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
