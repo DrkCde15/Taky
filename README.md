@@ -231,14 +231,15 @@ O frontend pode ser publicado no **GitHub Pages** via GitHub Actions.
 ### Como funciona
 
 - O workflow em `.github/workflows/deploy.yml` é acionado automaticamente em pushes para `main` que alterem arquivos em `frontend/`.
-- O build usa o **Nitro preset `static`**, gerando HTML estático em `.output/public/` para cada rota.
+- O build gera os assets em `.output/public/` (HTML, JS, CSS).
+- O workflow copia `index.html` como `404.html` — o GitHub Pages serve esse arquivo para qualquer rota desconhecida, permitindo que o roteador client-side (TanStack Router) assuma o controle.
 - O artifact é enviado ao GitHub Pages via `actions/deploy-pages`.
 
 ### Build manual (comprovante local)
 
 ```bash
 cd frontend
-$env:NITRO_PRESET="static"
+$env:VITE_BASE_PATH="/nome-do-repositorio/"
 npx vite build --base="/nome-do-repositorio/"
 ```
 
@@ -246,12 +247,10 @@ npx vite build --base="/nome-do-repositorio/"
 
 ### Variáveis de ambiente de build
 
-| Variável | Build | Descrição |
-|----------|-------|-----------|
-| `NITRO_PRESET` | `static` | Gera site estático (sem servidor Node) |
-| `VITE_BASE_PATH` | `--base` | Base path para o roteador TanStack Router |
-| `VITE_API_URL` | `http://localhost:8000` | URL do backend — mantenha o padrão para usar o backend local |
-| `BASE_PATH` | `--base` | Base path para assets do Vite |
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `VITE_BASE_PATH` | — | Base path para o roteador TanStack Router (ex: `/repo/`) |
+| `VITE_API_URL` | `http://localhost:8000` | URL do backend |
 
 > O workflow usa `actions/configure-pages` para detectar automaticamente o `base_path` correto.
 > O `VITE_API_URL` não precisa ser alterado se o backend estiver rodando em `localhost:8000`.
@@ -268,21 +267,24 @@ Para que o GitHub Pages funcione com o backend rodando na sua máquina:
 
 > Se o backend for para a nuvem no futuro, basta definir `VITE_API_URL=https://seudominio.com` no build.
 
-### Estrutura de saída
+### Roteamento SPA
 
-O build gera:
+O deploy usa **single-page application (SPA)** fallback:
 
 ```
 frontend/.output/public/
-├── index.html            # Rota raiz
+├── index.html            # App shell (entrada do SPA)
+├── 404.html              # Cópia do index.html — GitHub Pages serve para rotas desconhecidas
 ├── assets/               # JS/CSS compilados
-├── teams/index.html      # Rota /teams
-├── tasks/index.html      # Rota /tasks
-├── admin/index.html      # Rota /admin
 └── ...
 ```
 
-Cada rota do TanStack Router vira um arquivo HTML independente — navegação direta funciona sem `404.html`.
+Quando o usuário acessa `https://seu-usuario.github.io/repo/tarefas` diretamente:
+1. GitHub Pages não encontra `tarefas/index.html` e serve `404.html`
+2. O JavaScript carrega e o TanStack Router lê a URL `/repo/tarefas`
+3. O roteador (com `basepath: /repo/`) extrai a rota `/tarefas` e renderiza a página correta
+
+> Para site de usuário (`seu-usuario.github.io`), o `basepath` vira `/` e o comportamento é o mesmo.
 
 ---
 
