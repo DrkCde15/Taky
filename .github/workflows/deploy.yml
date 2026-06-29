@@ -44,16 +44,36 @@ jobs:
         env:
           VITE_BASE_PATH: ${{ steps.configure.outputs.base_path }}
 
+      - name: Find build output
+        id: find_out
+        run: |
+          if [ -d dist ]; then
+            echo "dir=dist" >> "$GITHUB_OUTPUT"
+            ls -la dist
+          elif [ -d .output/public ]; then
+            echo "dir=.output/public" >> "$GITHUB_OUTPUT"
+            ls -la .output/public
+          elif [ -d .output ]; then
+            echo "dir=.output" >> "$GITHUB_OUTPUT"
+            ls -la .output
+          else
+            echo "=== Searching for index.html ==="
+            find . -name "index.html" -type f 2>/dev/null
+            exit 1
+          fi
+
       - name: Copy 404.html for SPA routing
-        run: cp dist/index.html dist/404.html
+        run: |
+          DIR="${{ steps.find_out.outputs.dir }}"
+          cp "$DIR/index.html" "$DIR/404.html"
 
       - name: Create .nojekyll
-        run: touch dist/.nojekyll
+        run: touch "${{ steps.find_out.outputs.dir }}/.nojekyll"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: frontend/${{ steps.find_out.outputs.dir }}
 
       - name: Deploy to GitHub Pages
         id: deployment
