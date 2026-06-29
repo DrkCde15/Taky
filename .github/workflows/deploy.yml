@@ -39,7 +39,7 @@ jobs:
 
       - name: Build production assets
         env:
-          VITE_BASE_PATH: "${{ format('/{0}/', github.repository == '' ? '' : github.repository.split('/')[1] | replace('/', '-')) }}"
+          VITE_BASE_PATH: ${{ format('/{0}/', github.repository.split('/')[1] | replace('/', '-') ) }}
         run: |
           npm run build
 
