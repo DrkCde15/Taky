@@ -6,7 +6,7 @@
 
 Taky é um aplicativo de gerenciamento de tarefas com quadro Kanban drag-and-drop, visão em calendário, gerenciamento de equipes, analytics para administradores, notificações em tempo real e suporte a comentários, anexos e registro de horas.
 
-**Stack:** FastAPI (Python) + React 19 (TanStack Start) + MySQL
+**Stack:** FastAPI (Python) + React 19 (TanStack Start) + SQLite
 
 ---
 
@@ -91,7 +91,7 @@ Taky é um aplicativo de gerenciamento de tarefas com quadro Kanban drag-and-dro
 |-----------|-----------|
 | Framework | FastAPI (Python) |
 | ORM | SQLAlchemy 2.0 |
-| Banco | MySQL (PyMySQL) |
+| Banco | SQLite (sqlite3) |
 | Autenticação | JWT (python-jose) com access + refresh tokens |
 | Senhas | passlib (pbkdf2_sha256) |
 | Validação | Pydantic v2 |
@@ -218,16 +218,6 @@ npm run preview
 ```
 
 ---
-
-### Build manual (comprovante local)
-
-```bash
-cd frontend
-$env:VITE_BASE_PATH="/nome-do-repositorio/"
-npx vite build --base="/nome-do-repositorio/"
-```
-
-> O `--base` deve corresponder ao subpath do GitHub Pages. Para `username.github.io/repo`, use `--base=/repo/`. Para `username.github.io`, use `--base=/`.
 
 ### Variáveis de ambiente de build
 
