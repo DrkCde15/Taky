@@ -15,19 +15,25 @@ def delete_member(db: Session, member_id: int, current_user: User) -> None:
     if not db_member:
         raise HTTPException(status_code=404, detail="Membro não encontrado")
 
-    owned_teams = db.query(Team).filter(Team.owner_id == current_user.id).all()
-    if not owned_teams:
-        raise HTTPException(status_code=403, detail="Você não é proprietário de nenhuma equipe")
+    owned_team_ids = [t.id for t in db.query(Team).filter(Team.owner_id == current_user.id).all()]
+    admin_team_ids = [
+        tm.team_id for tm in db.query(TeamMember).filter(
+            TeamMember.user_id == current_user.id,
+            TeamMember.role == "admin",
+        ).all()
+    ]
+    managed_team_ids = list(set(owned_team_ids + admin_team_ids))
+    if not managed_team_ids:
+        raise HTTPException(status_code=403, detail="Você não é administrador de nenhuma equipe")
 
-    team_ids = [t.id for t in owned_teams]
-    is_in_team = db.query(TeamMember).filter(
+    target_membership = db.query(TeamMember).filter(
         TeamMember.user_id == member_id,
-        TeamMember.team_id.in_(team_ids),
+        TeamMember.team_id.in_(managed_team_ids),
     ).first()
-    if not is_in_team:
+    if not target_membership:
         raise HTTPException(
             status_code=403,
-            detail="Você só pode remover membros das suas próprias equipes",
+            detail="Este membro não está em nenhuma equipe que você administra",
         )
 
     db.query(Task).filter(Task.user_id == member_id).update(

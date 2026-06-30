@@ -58,6 +58,16 @@ def delete_team(db: Session, team_id: int, current_user: User) -> None:
     db.commit()
 
 
+def get_all_teams(db: Session, current_user: User) -> list[Team]:
+    from models.models import TeamMember
+    member_team_ids = [
+        tm.team_id for tm in db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    ]
+    if member_team_ids:
+        return db.query(Team).filter(~Team.id.in_(member_team_ids)).all()
+    return db.query(Team).all()
+
+
 def join_team(db: Session, team_id: int, current_user: User) -> User:
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:

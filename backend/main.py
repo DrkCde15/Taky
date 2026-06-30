@@ -1,10 +1,11 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
 from core.config import settings
 from core.database import Base, engine
 from routers import auth, tasks, members, teams, notifications, projects
 from core.security import get_current_user
+from pathlib import Path
 import os
 
 Base.metadata.create_all(bind=engine)
@@ -39,6 +40,19 @@ async def websocket_endpoint(websocket: WebSocket, project_id: int):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, project_id)
+
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str = ""):
+    path = full_path or "index.html"
+    file = FRONTEND_DIST / path
+    if file.is_file():
+        return FileResponse(file)
+    spa = FRONTEND_DIST / "index.html"
+    if spa.exists():
+        return FileResponse(spa, media_type="text/html")
+    return JSONResponse({"detail": "Not Found"}, status_code=404)
 
 if __name__ == "__main__":
     import uvicorn

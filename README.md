@@ -6,7 +6,7 @@
 
 Taky é um aplicativo de gerenciamento de tarefas com quadro Kanban drag-and-drop, visão em calendário, gerenciamento de equipes, analytics para administradores, notificações em tempo real e suporte a comentários, anexos e registro de horas.
 
-**Stack:** FastAPI (Python) + Streamlit (Python) + SQLite
+**Stack:** FastAPI (Python) + React 19 (TanStack Start) + MySQL
 
 ---
 
@@ -71,19 +71,27 @@ Taky é um aplicativo de gerenciamento de tarefas com quadro Kanban drag-and-dro
 ### Frontend
 | Categoria | Tecnologia |
 |-----------|-----------|
-| Framework | Streamlit |
-| Linguagem | Python |
-| HTTP | requests |
-| Gráficos | Streamlit native charts (st.bar_chart) |
-| Calendário | Custom (calendar module) |
-| Formulários | Streamlit forms |
+| Framework | React 19, TanStack Start (file-based routing + SSR) |
+| Linguagem | TypeScript |
+| Build | Vite 8, Nitro (Cloudflare) |
+| Estado | Zustand 5 (auth + tasks), TanStack Query (server state) |
+| Estilos | Tailwind CSS 4 + shadcn/ui (New York) + glassmorphism |
+| Ícones | Lucide |
+| Drag-and-drop | @dnd-kit |
+| Gráficos | Recharts |
+| Calendário | react-calendar |
+| Editor | @uiw/react-md-editor |
+| Formulários | react-hook-form + zod |
+| Toast | Sonner |
+| HTTP | Axios (com refresh automático de token) |
+| WebSocket | Cliente próprio com reconexão |
 
 ### Backend
 | Categoria | Tecnologia |
 |-----------|-----------|
 | Framework | FastAPI (Python) |
 | ORM | SQLAlchemy 2.0 |
-| Banco | SQLite |
+| Banco | MySQL (PyMySQL) |
 | Autenticação | JWT (python-jose) com access + refresh tokens |
 | Senhas | passlib (pbkdf2_sha256) |
 | Validação | Pydantic v2 |
@@ -183,7 +191,9 @@ python -m venv venv
 pip install -r requirements.txt
 
 # Configure o .env (copie de .env.example):
-# DATABASE_URL=sqlite:///./taky.db
+# MYSQL_USER=root
+# MYSQL_PASSWORD=sua_senha
+# MYSQL_DATABASE=Taky_db
 # SECRET_KEY=sua_chave_secreta
 
 uvicorn main:app --reload --port 8000
@@ -193,27 +203,72 @@ uvicorn main:app --reload --port 8000
 
 ```bash
 cd frontend
-pip install -r requirements.txt
-streamlit run streamlit_app.py
+npm install
+npm run dev
 ```
 
-O frontend Streamlit roda em `http://localhost:8501` e faz requisições para o backend em `http://localhost:8000`.
+O frontend roda em `http://localhost:5173` e faz requisições para o backend em `http://localhost:8000`.
 
-### 3. Reset do Banco
+### 3. Build de Produção (Frontend)
 
 ```bash
-cd backend
-.\venv\Scripts\activate
-python reset_db.py
+cd frontend
+npm run build
+npm run preview
 ```
 
 ---
 
-## Deploy
+### Build manual (comprovante local)
 
-Para deploy em produção, você pode usar serviços como Railway, Render, ou Fly.io para rodar tanto o backend FastAPI quanto o frontend Streamlit.
+```bash
+cd frontend
+$env:VITE_BASE_PATH="/nome-do-repositorio/"
+npx vite build --base="/nome-do-repositorio/"
+```
 
+> O `--base` deve corresponder ao subpath do GitHub Pages. Para `username.github.io/repo`, use `--base=/repo/`. Para `username.github.io`, use `--base=/`.
 
+### Variáveis de ambiente de build
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `VITE_BASE_PATH` | — | Base path para o roteador TanStack Router (ex: `/repo/`) |
+| `VITE_API_URL` | `http://localhost:8000` | URL do backend |
+
+> O workflow usa `actions/configure-pages` para detectar automaticamente o `base_path` correto.
+> O `VITE_API_URL` não precisa ser alterado se o backend estiver rodando em `localhost:8000`.
+
+### Rodar o site hospedado com backend local
+
+Para que o GitHub Pages funcione com o backend rodando na sua máquina:
+
+1. **CORS** — Adicione a URL do GitHub Pages no `ALLOWED_ORIGINS` do backend (`backend/.env`):
+   ```dotenv
+   ALLOWED_ORIGINS=http://localhost:5173,https://seu-usuario.github.io
+   ```
+2. **WebSocket** — A URL do WebSocket é derivada automaticamente do `VITE_API_URL` (padrão `http://localhost:8000` → `ws://localhost:8000`). Nenhuma configuração extra necessária.
+
+> Se o backend for para a nuvem no futuro, basta definir `VITE_API_URL=https://seudominio.com` no build.
+
+### Roteamento SPA
+
+O deploy usa **single-page application (SPA)** fallback:
+
+```
+frontend/dist/
+├── index.html            # App shell (entrada do SPA)
+├── 404.html              # Cópia do index.html — GitHub Pages serve para rotas desconhecidas
+├── assets/               # JS/CSS compilados
+└── ...
+```
+
+Quando o usuário acessa `https://seu-usuario.github.io/repo/tarefas` diretamente:
+1. GitHub Pages não encontra `tarefas/index.html` e serve `404.html`
+2. O JavaScript carrega e o TanStack Router lê a URL `/repo/tarefas`
+3. O roteador (com `basepath: /repo/`) extrai a rota `/tarefas` e renderiza a página correta
+
+> Para site de usuário (`seu-usuario.github.io`), o `basepath` vira `/` e o comportamento é o mesmo.
 
 ---
 
@@ -221,11 +276,13 @@ Para deploy em produção, você pode usar serviços como Railway, Render, ou Fl
 
 | Variável | Padrão | Descrição |
 |----------|--------|-----------|
-| Variável | Padrão | Descrição |
-|----------|--------|-----------|
-| `DATABASE_URL` | `sqlite:///./taky.db` | URL de conexão do SQLite |
+| `MYSQL_HOST` | `localhost` | Host do MySQL |
+| `MYSQL_PORT` | `3306` | Porta do MySQL |
+| `MYSQL_USER` | `root` | Usuário MySQL |
+| `MYSQL_PASSWORD` | — | Senha MySQL |
+| `MYSQL_DATABASE` | `taky_db` | Nome do banco |
 | `SECRET_KEY` | `change_me_in_production` | Chave para assinar JWT |
-| `ALLOWED_ORIGINS` | `http://localhost:8501` | Origens permitidas no CORS (separadas por vírgula) |
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | Origens permitidas no CORS (separadas por vírgula). Inclua a URL do GitHub Pages se for usar o site hospedado com backend local |
 
 > A senha deve ter no mínimo 8 caracteres, com ao menos 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial.
 
@@ -246,16 +303,12 @@ Taky/
 │   └── main.py        # FastAPI app entry point
 │
 └── frontend/
-    ├── streamlit_app.py    # Entry point (navigation, auth guard)
-    ├── pages/              # Streamlit pages
-    │   ├── login.py
-    │   ├── register.py
-    │   ├── kanban.py
-    │   ├── calendar_view.py
-    │   ├── teams.py
-    │   ├── admin.py
-    │   └── profile.py
-    ├── utils/
-    │   └── api.py          # HTTP client (requests wrapper)
-    └── requirements.txt
+    └── src/
+        ├── routes/          # TanStack file-based routing
+        ├── components/      # React components (Kanban, Modals, Navbar)
+        │   ├── kanban/      # Column, TaskCard, ModalEditTask
+        │   └── ui/          # shadcn/ui primitives
+        ├── stores/          # Zustand stores (auth, tasks, notifications)
+        ├── lib/             # Websocket, utilities, error handling
+        └── utils/           # Axios API client
 ```

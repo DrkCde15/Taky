@@ -27,6 +27,14 @@ def create_team(
     return team_service.create_team(db, team, current_user)
 
 
+@router.get("/available", response_model=List[Team])
+def get_available_teams(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return team_service.get_all_teams(db, current_user)
+
+
 @router.put("/{team_id}", response_model=Team)
 def update_team(
     team_id: int,
